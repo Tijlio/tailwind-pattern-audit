@@ -62,6 +62,7 @@ program
     "Maximum near-duplicate groups to report.",
     parseNonNegativeInteger,
   )
+  .option("--baseline <path>", "Ignore duplicate groups present in a previous JSON report.")
   .option("--format <format>", "Output format: terminal, json, markdown, or pr.", "terminal")
   .option("--json", "Shortcut for --format json.")
   .option("--markdown", "Shortcut for --format markdown.")
@@ -99,6 +100,7 @@ program
       similar: options.similar,
       minSimilarity: options.minSimilarity,
       maxSimilarGroups: options.maxSimilarGroups,
+      baseline: options.baseline,
       configFile: resolveConfigFileOption(options),
       failOn: options.failOn,
       maxGroups: options.maxGroups,
@@ -153,6 +155,7 @@ interface CliOptions {
   similar?: boolean;
   minSimilarity?: number;
   maxSimilarGroups?: number;
+  baseline?: string;
   format: string;
   json?: boolean;
   markdown?: boolean;

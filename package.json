@@ -1,6 +1,6 @@
 {
   "name": "tailwind-pattern-audit",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Find repeated Tailwind class patterns in JavaScript, TypeScript, HTML, Astro, Vue, and Svelte projects.",
   "type": "module",
   "license": "MIT",

@@ -93,7 +93,8 @@ async function analyzeFilesWithResolvedOptions(
     diagnostics.push(...result.diagnostics);
   }
 
-  const groups = buildDuplicateGroups(occurrences, options);
+  const baselineGroups = options.baseline ? await loadBaselineGroups(options) : undefined;
+  const groups = buildDuplicateGroups(occurrences, options, baselineGroups);
   const similarGroups = options.similar ? buildSimilarGroups(occurrences, options) : undefined;
 
   return {
@@ -117,6 +118,7 @@ function findExtractor(filePath: string): Extractor | undefined {
 function buildDuplicateGroups(
   occurrences: ClassOccurrence[],
   options: ResolvedAnalyzeOptions,
+  baselineGroups?: Set<string>,
 ): DuplicateClassGroup[] {
   const grouped = new Map<string, ClassOccurrence[]>();
 
@@ -141,11 +143,45 @@ function buildDuplicateGroups(
       recommendation: buildRecommendation(groupOccurrences),
     }))
     .filter((group) => matchesRecommendationFilters(group, options))
+    .filter((group) => !baselineGroups?.has(group.normalized))
     .sort(compareGroups)
     .map((group, index) => ({
       id: `twpa-${String(index + 1).padStart(3, "0")}`,
       ...group,
     }));
+}
+
+async function loadBaselineGroups(options: ResolvedAnalyzeOptions): Promise<Set<string>> {
+  if (!options.baseline) {
+    return new Set();
+  }
+
+  const baselinePath = path.resolve(options.cwd, options.baseline);
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(await readFile(baselinePath, "utf8")) as unknown;
+  } catch (error) {
+    throw new Error(`Unable to read baseline file ${baselinePath}: ${formatError(error)}`);
+  }
+
+  if (!isPlainObject(parsed) || !Array.isArray(parsed.groups)) {
+    throw new Error(`Baseline file ${baselinePath} must be a JSON report with a groups array.`);
+  }
+
+  const groups = new Set<string>();
+
+  for (const group of parsed.groups) {
+    if (!isPlainObject(group) || typeof group.normalized !== "string") {
+      throw new Error(
+        `Baseline file ${baselinePath} contains a group without a normalized class pattern.`,
+      );
+    }
+
+    groups.add(group.normalized);
+  }
+
+  return groups;
 }
 
 function buildSimilarGroups(
@@ -585,4 +621,12 @@ function compareOccurrences(a: ClassOccurrence, b: ClassOccurrence): number {
 
 function normalizePath(filePath: string): string {
   return filePath.split(path.sep).join("/");
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

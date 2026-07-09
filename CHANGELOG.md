@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8
+
+- Added `--baseline` support for ignoring duplicate groups present in a previous JSON report.
+- Added `baseline` config and GitHub Action inputs.
+- Documented the baseline workflow for CI adoption.
+
 ## 0.1.7
 
 - Added static `class` attribute extraction for `.vue` and `.svelte` files.

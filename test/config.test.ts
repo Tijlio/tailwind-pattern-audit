@@ -82,6 +82,16 @@ describe("config validation", () => {
       /"minSimilarity" must be a number greater than 0 and up to 1/,
     );
   });
+
+  it("rejects invalid baseline paths from config", async () => {
+    const cwd = await createTempProject({
+      "tailwind-pattern-audit.config.json": JSON.stringify({
+        baseline: "",
+      }),
+    });
+
+    await expect(analyzeProject({ cwd })).rejects.toThrow(/"baseline" must be a non-empty string/);
+  });
 });
 
 async function createTempProject(files: Record<string, string> = {}): Promise<string> {

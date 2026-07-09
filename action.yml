@@ -41,6 +41,9 @@ inputs:
   max-similar-groups:
     description: Maximum near-duplicate groups to report.
     required: false
+  baseline:
+    description: Previous JSON report whose duplicate groups should be ignored.
+    required: false
   format:
     description: "Output format: terminal, json, markdown, or pr."
     required: false
@@ -120,6 +123,10 @@ runs:
 
         if [ -n "${{ inputs.max-similar-groups }}" ]; then
           args+=(--max-similar-groups "${{ inputs.max-similar-groups }}")
+        fi
+
+        if [ -n "${{ inputs.baseline }}" ]; then
+          args+=(--baseline "${{ inputs.baseline }}")
         fi
 
         if [ -n "${{ inputs.output }}" ]; then

@@ -63,6 +63,32 @@ describe("analyzeFiles", () => {
     ).toBe(true);
   });
 
+  it("filters duplicate groups found in a baseline report", async () => {
+    const fixture = await createFixture({
+      "src/One.tsx": `
+        export function One() {
+          return <button className="rounded-md border bg-white p-4" />;
+        }
+      `,
+      "src/Two.tsx": `
+        export function Two() {
+          return <a className="p-4 bg-white border rounded-md" />;
+        }
+      `,
+    });
+    const baseline = await analyzeProject({ cwd: fixture, minClasses: 4 });
+    await writeFile(path.join(fixture, "tailwind-audit-baseline.json"), JSON.stringify(baseline));
+
+    const report = await analyzeProject({
+      cwd: fixture,
+      minClasses: 4,
+      baseline: "tailwind-audit-baseline.json",
+    });
+
+    expect(baseline.groups).toHaveLength(1);
+    expect(report.groups).toHaveLength(0);
+  });
+
   it("extracts static branches from JSX conditional className expressions", async () => {
     const fixture = await createFixture({
       "src/Conditional.tsx": `

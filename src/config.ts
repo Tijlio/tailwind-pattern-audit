@@ -46,6 +46,7 @@ const CONFIG_KEYS = new Set([
   "similar",
   "minSimilarity",
   "maxSimilarGroups",
+  "baseline",
   "failOn",
   "maxGroups",
   "maxOccurrences",
@@ -82,6 +83,7 @@ export async function resolveOptions(
   const similar = options.similar ?? config.similar ?? false;
   const minSimilarity = options.minSimilarity ?? config.minSimilarity ?? 0.75;
   const maxSimilarGroups = options.maxSimilarGroups ?? config.maxSimilarGroups ?? 20;
+  const baseline = options.baseline ?? config.baseline;
   const failOn = options.failOn ?? config.failOn ?? [];
   const maxGroups = options.maxGroups ?? config.maxGroups;
   const maxOccurrences = options.maxOccurrences ?? config.maxOccurrences;
@@ -99,6 +101,7 @@ export async function resolveOptions(
     similar,
     minSimilarity,
     maxSimilarGroups,
+    baseline,
     configFile: options.configFile,
     failOn,
     maxGroups,
@@ -181,6 +184,7 @@ function validateConfigShape(config: unknown, source: string): ConfigShape {
       "maxSimilarGroups",
       source,
     ),
+    baseline: validateOptionalString(input.baseline, "baseline", source),
     failOn: validateOptionalFailOn(input.failOn, source),
     maxGroups: validateOptionalNonNegativeInteger(input.maxGroups, "maxGroups", source),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -209,6 +213,7 @@ function validateResolvedOptions(options: ResolvedAnalyzeOptions): ResolvedAnaly
       "maxSimilarGroups",
       "options",
     ),
+    baseline: validateOptionalString(options.baseline, "baseline", "options"),
     failOn: validateFailOn(options.failOn, "options"),
     maxGroups: validateOptionalNonNegativeInteger(options.maxGroups, "maxGroups", "options"),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -237,6 +242,18 @@ function validateStringArray(value: unknown, name: string, source: string): stri
     value.some((item) => typeof item !== "string" || item.length === 0)
   ) {
     throw new ConfigValidationError(`${source}: "${name}" must be an array of non-empty strings.`);
+  }
+
+  return value;
+}
+
+function validateOptionalString(value: unknown, name: string, source: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "string" || value.length === 0) {
+    throw new ConfigValidationError(`${source}: "${name}" must be a non-empty string.`);
   }
 
   return value;

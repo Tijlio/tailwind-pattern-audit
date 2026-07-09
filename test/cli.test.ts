@@ -107,6 +107,38 @@ describe("CLI", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("filters duplicate groups from a baseline report before CI gates run", async () => {
+    const outputPath = path.join(fixture, `twpa-baseline-${crypto.randomUUID()}.json`);
+
+    try {
+      const baseline = await runCli([
+        "--cwd",
+        fixture,
+        "--json",
+        "--output",
+        outputPath,
+        "--quiet",
+      ]);
+      const result = await runCli([
+        "--cwd",
+        fixture,
+        "--json",
+        "--baseline",
+        outputPath,
+        "--fail-on",
+        "duplicates",
+      ]);
+      const report = JSON.parse(result.stdout) as { groups: unknown[] };
+
+      expect(baseline.exitCode).toBe(0);
+      expect(result.exitCode).toBe(0);
+      expect(report.groups).toHaveLength(0);
+      expect(result.stderr).toBe("");
+    } finally {
+      await rm(outputPath, { force: true });
+    }
+  });
+
   it("returns a non-zero exit code when CI gate conditions fail", async () => {
     const result = await runCli(["--cwd", fixture, "--json", "--fail-on", "duplicates"]);
 

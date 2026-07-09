@@ -16,6 +16,7 @@ export interface AnalyzeProjectOptions {
   similar?: boolean;
   minSimilarity?: number;
   maxSimilarGroups?: number;
+  baseline?: string;
   configFile?: string | false;
   failOn?: FailOnCondition[];
   maxGroups?: number;
@@ -39,6 +40,7 @@ export interface ResolvedAnalyzeOptions {
   similar: boolean;
   minSimilarity: number;
   maxSimilarGroups: number;
+  baseline?: string;
   configFile: string | false | undefined;
   failOn: FailOnCondition[];
   maxGroups?: number;
