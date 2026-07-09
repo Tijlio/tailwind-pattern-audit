@@ -8,7 +8,7 @@
 - Added priority and kind summaries to terminal and Markdown reports.
 - Added README status badges.
 - Improved Markdown reports with grouped top-candidate sections.
-- Updated the release workflow to use the latest npm CLI for trusted publishing.
+- Updated the release workflow to use an npm CLI version with trusted publishing support.
 
 ## 0.1.0
 
