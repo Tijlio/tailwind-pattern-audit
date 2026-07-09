@@ -35,6 +35,7 @@ tailwind-pattern-audit config print
 tailwind-pattern-audit baseline create --baseline-output tailwind-audit-baseline.json
 tailwind-pattern-audit --json
 tailwind-pattern-audit --markdown
+tailwind-pattern-audit --html --output tailwind-audit.html
 tailwind-pattern-audit --min-occurrences 3
 tailwind-pattern-audit --min-classes 4
 tailwind-pattern-audit --priority high medium
@@ -64,10 +65,11 @@ so existing projects can turn on CI gates incrementally.
 ## Library
 
 ```ts
-import { analyzeProject, formatReport, generateSarif } from "tailwind-pattern-audit";
+import { analyzeProject, formatReport, generateHtml, generateSarif } from "tailwind-pattern-audit";
 
 const report = await analyzeProject({ cwd: process.cwd() });
 console.log(formatReport(report, "markdown"));
+console.log(generateHtml(report));
 console.log(generateSarif(report));
 ```
 
@@ -170,6 +172,7 @@ Supported in this release:
 - resolved config validation and printing
 - JSON schema for `tailwind-pattern-audit.config.json`
 - GitHub workflow annotation output
+- HTML report output
 - SARIF report output
 - JSON report performance metrics
 

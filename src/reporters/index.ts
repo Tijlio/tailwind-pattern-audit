@@ -1,4 +1,5 @@
 import { generateGithubAnnotations } from "./github.js";
+import { generateHtml } from "./html.js";
 import { generateJson } from "./json.js";
 import { generateMarkdown } from "./markdown.js";
 import { generatePr } from "./pr.js";
@@ -8,6 +9,7 @@ import type { AuditReport, ReportFormat, ReportFormatOptions } from "../types.js
 
 export {
   generateGithubAnnotations,
+  generateHtml,
   generateJson,
   generateMarkdown,
   generatePr,
@@ -23,6 +25,8 @@ export function formatReport(
   switch (format) {
     case "github":
       return generateGithubAnnotations(report, options.annotationLimit);
+    case "html":
+      return generateHtml(report);
     case "json":
       return generateJson(report);
     case "markdown":

@@ -12,6 +12,12 @@ Run a first audit:
 pnpm tailwind-pattern-audit --markdown --output tailwind-audit.md
 ```
 
+For a browsable report, write a self-contained HTML file:
+
+```bash
+pnpm tailwind-pattern-audit --html --output tailwind-audit.html
+```
+
 For a quieter first pass on mature projects, hide layout-only repeats:
 
 ```bash
@@ -34,7 +40,7 @@ pnpm tailwind-pattern-audit --baseline tailwind-audit-baseline.json --fail-on du
 
 ## Recommended Rollout
 
-1. Run a Markdown report locally.
+1. Run a Markdown or HTML report locally.
 2. Review the top component and utility candidates.
 3. Add inline ignores or `ignorePatterns` for intentional repeats.
 4. Create a baseline for existing findings.

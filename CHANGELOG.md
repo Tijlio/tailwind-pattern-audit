@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+- Added self-contained HTML report output with `--format html` and `--html`.
+- Exported `generateHtml` from the public reporter API.
+- Documented the HTML report as the bridge toward the future VS Code webview.
+
 ## 1.1.0
 
 - Added `config validate` and `config print` commands for CI and local config debugging.

@@ -156,6 +156,16 @@ describe("CLI", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("prints HTML reports", async () => {
+    const result = await runCli(["--cwd", fixture, "--html"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("<!doctype html>");
+    expect(result.stdout).toContain("<title>Tailwind Pattern Audit</title>");
+    expect(result.stdout).toContain("Duplicate Groups");
+    expect(result.stderr).toBe("");
+  });
+
   it("prints GitHub workflow annotations", async () => {
     const result = await runCli(["--cwd", fixture, "--github", "--annotation-limit", "1"]);
 

@@ -6,6 +6,7 @@ export { AUDIT_REPORT_SCHEMA } from "./report-schema.js";
 export {
   formatReport,
   generateGithubAnnotations,
+  generateHtml,
   generateJson,
   generateMarkdown,
   generatePr,

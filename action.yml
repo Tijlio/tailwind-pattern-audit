@@ -51,7 +51,7 @@ inputs:
     description: Newline-separated exact class patterns to omit from duplicate and similarity reports.
     required: false
   format:
-    description: "Output format: terminal, json, markdown, pr, github, or sarif."
+    description: "Output format: terminal, json, markdown, html, pr, github, or sarif."
     required: false
     default: "terminal"
   output:

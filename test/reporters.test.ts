@@ -149,6 +149,21 @@ describe("formatReport", () => {
     expect(markdown).toContain("Recommendation: medium component");
   });
 
+  it("formats HTML with summary, candidates, evidence, and escaped content", () => {
+    const html = formatReport(report, "html");
+
+    expect(html).toContain("<!doctype html>");
+    expect(html).toContain("<title>Tailwind Pattern Audit</title>");
+    expect(html).toContain("Duplicate groups");
+    expect(html).toContain("Top Candidates");
+    expect(html).toContain('href="#twpa-001"');
+    expect(html).toContain("src/A.tsx:3:18");
+    expect(html).toContain("Similar Groups");
+    expect(html).toContain("Diagnostics");
+    expect(html).toContain("Recovered parse issue");
+    expect(html).not.toContain("<script");
+  });
+
   it("formats terminal output with a compact summary", () => {
     const terminal = formatReport(report, "terminal");
 

@@ -16,11 +16,20 @@ const program = new Command();
 const FORMAT_SHORTCUTS = [
   ["json", "json"],
   ["markdown", "markdown"],
+  ["html", "html"],
   ["pr", "pr"],
   ["github", "github"],
   ["sarif", "sarif"],
 ] as const;
-const REPORT_FORMATS = new Set<string>(["terminal", "json", "markdown", "pr", "github", "sarif"]);
+const REPORT_FORMATS = new Set<string>([
+  "terminal",
+  "json",
+  "markdown",
+  "html",
+  "pr",
+  "github",
+  "sarif",
+]);
 
 program
   .command("init")
@@ -130,11 +139,12 @@ program
   )
   .option(
     "--format <format>",
-    "Output format: terminal, json, markdown, pr, github, or sarif.",
+    "Output format: terminal, json, markdown, html, pr, github, or sarif.",
     "terminal",
   )
   .option("--json", "Shortcut for --format json.")
   .option("--markdown", "Shortcut for --format markdown.")
+  .option("--html", "Shortcut for --format html.")
   .option("--pr", "Shortcut for --format pr.")
   .option("--github", "Shortcut for --format github.")
   .option("--sarif", "Shortcut for --format sarif.")
@@ -173,6 +183,7 @@ interface CliOptions extends Omit<AnalyzeProjectOptions, "configFile"> {
   format: string;
   json?: boolean;
   markdown?: boolean;
+  html?: boolean;
   pr?: boolean;
   github?: boolean;
   sarif?: boolean;
@@ -375,7 +386,7 @@ function resolveFormat(options: CliOptions): ReportFormat {
   }
 
   throw new Error(
-    `Unsupported format "${options.format}". Expected terminal, json, markdown, pr, github, or sarif.`,
+    `Unsupported format "${options.format}". Expected terminal, json, markdown, html, pr, github, or sarif.`,
   );
 }
 

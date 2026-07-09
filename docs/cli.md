@@ -16,6 +16,7 @@ tailwind-pattern-audit baseline create --baseline-output tailwind-audit-baseline
 tailwind-pattern-audit --format terminal
 tailwind-pattern-audit --json
 tailwind-pattern-audit --markdown
+tailwind-pattern-audit --html
 tailwind-pattern-audit --pr
 tailwind-pattern-audit --github
 tailwind-pattern-audit --sarif
@@ -25,6 +26,7 @@ Use `--output <path>` to write a report file:
 
 ```bash
 tailwind-pattern-audit --markdown --output tailwind-audit.md
+tailwind-pattern-audit --html --output tailwind-audit.html
 tailwind-pattern-audit --sarif --output tailwind-pattern-audit.sarif.json
 ```
 

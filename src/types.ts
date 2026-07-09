@@ -1,4 +1,4 @@
-export type ReportFormat = "terminal" | "json" | "markdown" | "pr" | "github" | "sarif";
+export type ReportFormat = "terminal" | "json" | "markdown" | "html" | "pr" | "github" | "sarif";
 export type FailOnCondition = "duplicates" | "diagnostics" | "warnings" | "errors";
 export type RecommendationKind = "component" | "cva" | "utility";
 export type RecommendationPriority = "high" | "medium" | "low";
