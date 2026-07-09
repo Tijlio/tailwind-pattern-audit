@@ -22,13 +22,23 @@ tailwind-pattern-audit --github
 tailwind-pattern-audit --sarif
 ```
 
+The HTML report is a static file intended for local review or CI artifacts:
+
+```bash
+tailwind-pattern-audit --html --output tailwind-audit.html
+```
+
 Use `--output <path>` to write a report file:
 
 ```bash
+tailwind-pattern-audit --json --output tailwind-audit.json
 tailwind-pattern-audit --markdown --output tailwind-audit.md
 tailwind-pattern-audit --html --output tailwind-audit.html
 tailwind-pattern-audit --sarif --output tailwind-pattern-audit.sarif.json
 ```
+
+Use JSON when building editor integrations or other tooling. The public report contract is
+documented in [Report schema](report-schema.md).
 
 ## Filtering
 

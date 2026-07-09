@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Tijlio/tailwind-pattern-audit/main/schemas/config.schema.json",
+  "include": ["src/**/*.{js,jsx,ts,tsx,html,astro,vue,svelte}"],
+  "exclude": ["**/node_modules/**", "**/dist/**", "**/.next/**"],
+  "minOccurrences": 2,
+  "minClasses": 4,
+  "hideLayoutOnly": true,
+  "similar": true,
+  "minSimilarity": 0.75,
+  "ignoreFiles": ["src/generated/**"],
+  "ignorePatterns": [],
+  "failOn": ["duplicates"],
+  "maxGroups": 0
+}

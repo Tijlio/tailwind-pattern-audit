@@ -1,0 +1,27 @@
+name: Tailwind Pattern Audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: Tijlio/tailwind-pattern-audit@v1
+        with:
+          format: pr
+          comment: true
+          annotations: true
+          fail-on: duplicates
+          max-groups: 0
+          hide-layout-only: true
+          similar: true
+          min-similarity: 0.7
+          node-version: 24

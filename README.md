@@ -21,9 +21,15 @@ references, and JSON/Markdown/SARIF output that other tools can consume.
 - [Getting started](docs/getting-started.md)
 - [CLI reference](docs/cli.md)
 - [Configuration](docs/config.md)
+- [HTML report](docs/html-report.md)
+- [Report schema](docs/report-schema.md)
 - [GitHub Action](docs/github-action.md)
 - [SARIF and code scanning](docs/sarif-code-scanning.md)
 - [VS Code roadmap](docs/vscode-roadmap.md)
+
+Copy-paste examples live in [`examples/`](examples/).
+
+![Tailwind Pattern Audit HTML report](docs/assets/html-report.png)
 
 ## CLI
 
@@ -102,6 +108,8 @@ permissions:
 Use `comment: true` with `format: pr` to post or update a compact pull request comment.
 Use `annotations: true` to add duplicate groups and warning/error diagnostics to the GitHub
 Checks UI.
+Use `format: html` to write a static report that can be opened locally or uploaded as a CI
+artifact.
 Use `format: sarif` when you want a machine-readable report for code-scanning style tooling.
 
 ### Code Scanning

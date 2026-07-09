@@ -41,6 +41,9 @@
     "dist",
     "schemas",
     "docs/*.md",
+    "docs/assets/*.png",
+    "examples/*.json",
+    "examples/*.yml",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"

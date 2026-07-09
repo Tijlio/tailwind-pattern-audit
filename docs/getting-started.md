@@ -18,6 +18,8 @@ For a browsable report, write a self-contained HTML file:
 pnpm tailwind-pattern-audit --html --output tailwind-audit.html
 ```
 
+![Tailwind Pattern Audit HTML report](assets/html-report.png)
+
 For a quieter first pass on mature projects, hide layout-only repeats:
 
 ```bash

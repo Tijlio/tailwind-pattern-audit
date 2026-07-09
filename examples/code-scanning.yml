@@ -1,0 +1,23 @@
+name: Tailwind Pattern Audit Code Scanning
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npx --yes tailwind-pattern-audit@latest --sarif --output tailwind-pattern-audit.sarif.json
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: tailwind-pattern-audit.sarif.json
