@@ -186,10 +186,11 @@ describe("formatReport", () => {
     const sarif = JSON.parse(formatReport(report, "sarif")) as {
       version: string;
       runs: Array<{
-        tool: { driver: { rules: Array<{ id: string }> } };
+        tool: { driver: { rules: Array<{ id: string; properties?: { tags?: string[] } }> } };
         results: Array<{
           ruleId: string;
           level: string;
+          properties?: { priority?: string; kind?: string; files?: string[] };
           locations?: Array<{
             physicalLocation: {
               artifactLocation: { uri: string };
@@ -203,11 +204,17 @@ describe("formatReport", () => {
 
     expect(sarif.version).toBe("2.1.0");
     expect(sarif.runs[0]?.tool.driver.rules.map((rule) => rule.id)).toContain(
-      "tailwind-pattern-audit/duplicate-pattern",
+      "tailwind-pattern-audit/duplicate-component-pattern",
     );
+    expect(sarif.runs[0]?.tool.driver.rules[0]?.properties?.tags).toContain("tailwind");
     expect(sarif.runs[0]?.results[0]).toMatchObject({
-      ruleId: "tailwind-pattern-audit/duplicate-pattern",
+      ruleId: "tailwind-pattern-audit/duplicate-component-pattern",
       level: "warning",
+      properties: {
+        priority: "medium",
+        kind: "component",
+        files: ["src/A.tsx", "src/B.tsx"],
+      },
     });
     expect(sarif.runs[0]?.results[0]?.locations?.[0]?.physicalLocation.artifactLocation.uri).toBe(
       "src/A.tsx",

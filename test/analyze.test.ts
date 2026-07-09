@@ -36,6 +36,34 @@ describe("analyzeFiles", () => {
       "src/One.tsx",
       "src/Two.tsx",
     ]);
+    expect(report.performance).toMatchObject({
+      scanMs: 0,
+      totalMs: expect.any(Number),
+      filesPerSecond: expect.any(Number),
+    });
+  });
+
+  it("extracts static JSX class attributes for Solid and Preact style components", async () => {
+    const fixture = await createFixture({
+      "src/One.tsx": `
+        export function One() {
+          return <button class="rounded-md border bg-white p-4">Save</button>;
+        }
+      `,
+      "src/Two.tsx": `
+        export function Two() {
+          return <a class={"p-4 bg-white border rounded-md"}>Open</a>;
+        }
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture, minClasses: 4 });
+
+    expect(report.groups).toHaveLength(1);
+    expect(report.groups[0]?.occurrences.map((occurrence) => occurrence.source)).toEqual([
+      { extractor: "javascript", kind: "jsxAttribute", name: "class" },
+      { extractor: "javascript", kind: "jsxAttribute", name: "class" },
+    ]);
   });
 
   it("extracts static class strings from configured helper calls", async () => {

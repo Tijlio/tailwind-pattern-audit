@@ -120,7 +120,7 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
         diagnostics.push({
           severity: "info",
           code: "dynamic_classname_skipped",
-          message: "Skipped dynamic className expression.",
+          message: `Skipped dynamic ${getJsxAttributeName(attribute)} expression.`,
           filePath: input.relativePath,
           line: location.line,
           column: location.column,
@@ -136,7 +136,7 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
           node: value.node,
           lineIgnores,
           kind: "jsxAttribute",
-          name: "className",
+          name: getJsxAttributeName(attribute),
         });
       }
     },
@@ -170,7 +170,15 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
 }
 
 function isClassNameAttribute(attribute: JSXAttribute): boolean {
-  return attribute.name.type === "JSXIdentifier" && attribute.name.name === "className";
+  return attribute.name.type === "JSXIdentifier" && isJsxClassAttributeName(attribute.name.name);
+}
+
+function isJsxClassAttributeName(name: string): boolean {
+  return name === "className" || name === "class";
+}
+
+function getJsxAttributeName(attribute: JSXAttribute): string {
+  return attribute.name.type === "JSXIdentifier" ? attribute.name.name : "className";
 }
 
 function extractJsxAttributeStaticValues(

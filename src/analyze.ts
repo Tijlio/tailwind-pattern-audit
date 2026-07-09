@@ -54,7 +54,10 @@ export async function analyzeResolvedProject(
 ): Promise<AuditReport> {
   const startedAt = performance.now();
   const files = await scanFiles(resolvedOptions);
-  const report = await analyzeFilesWithResolvedOptions(files, resolvedOptions, startedAt);
+  const scanMs = Math.round(performance.now() - startedAt);
+  const report = await analyzeFilesWithResolvedOptions(files, resolvedOptions, startedAt, {
+    scanMs,
+  });
 
   return {
     ...report,
@@ -69,15 +72,21 @@ export async function analyzeFiles(
   const startedAt = performance.now();
   const resolvedOptions = await resolveOptions(options);
 
-  return analyzeFilesWithResolvedOptions(files, resolvedOptions, startedAt, options.scannedFiles);
+  return analyzeFilesWithResolvedOptions(files, resolvedOptions, startedAt, {
+    scannedFiles: options.scannedFiles,
+    scanMs: 0,
+  });
 }
 
 async function analyzeFilesWithResolvedOptions(
   files: string[],
   options: ResolvedAnalyzeOptions,
   startedAt: number,
-  scannedFiles = files.length,
+  performanceInput: { scannedFiles?: number; scanMs?: number } = {},
 ): Promise<AuditReport> {
+  const scannedFiles = performanceInput.scannedFiles ?? files.length;
+  const scanMs = performanceInput.scanMs ?? 0;
+  const extractStartedAt = performance.now();
   const occurrences: ClassOccurrence[] = [];
   const diagnostics: Diagnostic[] = [];
 
@@ -110,6 +119,8 @@ async function analyzeFilesWithResolvedOptions(
   const similarGroups = options.similar
     ? buildSimilarGroups(reportOccurrences, options)
     : undefined;
+  const totalMs = Math.round(performance.now() - startedAt);
+  const extractMs = Math.round(performance.now() - extractStartedAt);
 
   return {
     schemaVersion: 1,
@@ -120,8 +131,22 @@ async function analyzeFilesWithResolvedOptions(
     groups,
     ...(similarGroups ? { similarGroups } : {}),
     diagnostics: reportDiagnostics,
-    durationMs: Math.round(performance.now() - startedAt),
+    durationMs: totalMs,
+    performance: {
+      scanMs,
+      extractMs,
+      totalMs,
+      filesPerSecond: calculateFilesPerSecond(scannedFiles, totalMs),
+    },
   };
+}
+
+function calculateFilesPerSecond(scannedFiles: number, totalMs: number): number {
+  if (scannedFiles === 0 || totalMs <= 0) {
+    return 0;
+  }
+
+  return Math.round((scannedFiles / totalMs) * 1000);
 }
 
 function buildReportFilters(options: ResolvedAnalyzeOptions): ReportFilters {

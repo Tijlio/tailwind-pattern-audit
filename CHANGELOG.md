@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Added `config validate` and `config print` commands for CI and local config debugging.
+- Added `baseline create` for first-run CI adoption without hand-writing baseline commands.
+- Added JSX `class` attribute extraction for Solid and Preact style components.
+- Added structured JSON report performance metrics.
+- Improved SARIF output with recommendation-kind rule IDs and richer result metadata.
+- Added issue templates, contribution guidance, and a security policy.
+
 ## 1.0.0
 
 - Added SARIF report output with `--format sarif` and `--sarif`.

@@ -21,6 +21,9 @@ references, and JSON/Markdown/SARIF output that other tools can consume.
 ```bash
 tailwind-pattern-audit
 tailwind-pattern-audit init
+tailwind-pattern-audit config validate
+tailwind-pattern-audit config print
+tailwind-pattern-audit baseline create --baseline-output tailwind-audit-baseline.json
 tailwind-pattern-audit --json
 tailwind-pattern-audit --markdown
 tailwind-pattern-audit --min-occurrences 3
@@ -44,6 +47,11 @@ tailwind-pattern-audit --ignore-pattern "rounded-md border bg-white p-4"
 focused source globs, `minClasses: 4`, and layout-only filtering for quieter first-run reports.
 Generated configs include a `$schema` reference for editor autocomplete.
 
+`tailwind-pattern-audit config validate` validates the resolved config without scanning files.
+`tailwind-pattern-audit config print` prints the resolved config as JSON, including defaults.
+`tailwind-pattern-audit baseline create` writes a JSON baseline from the current duplicate groups
+so existing projects can turn on CI gates incrementally.
+
 ## Library
 
 ```ts
@@ -61,7 +69,7 @@ permissions:
   contents: read
   pull-requests: write
 
-- uses: Tijlio/tailwind-pattern-audit@v1.0.0
+- uses: Tijlio/tailwind-pattern-audit@v1
   with:
     format: pr
     comment: true
@@ -84,6 +92,24 @@ Use `comment: true` with `format: pr` to post or update a compact pull request c
 Use `annotations: true` to add duplicate groups and warning/error diagnostics to the GitHub
 Checks UI.
 Use `format: sarif` when you want a machine-readable report for code-scanning style tooling.
+
+### Code Scanning
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+
+steps:
+  - uses: actions/checkout@v5
+  - uses: actions/setup-node@v6
+    with:
+      node-version: 24
+  - run: npx --yes tailwind-pattern-audit@latest --sarif --output tailwind-pattern-audit.sarif.json
+  - uses: github/codeql-action/upload-sarif@v4
+    with:
+      sarif_file: tailwind-pattern-audit.sarif.json
+```
 
 ## Inline Ignores
 
@@ -111,7 +137,7 @@ git push origin main --follow-tags
 ```
 
 `.github/workflows/release.yml` publishes matching `v*.*.*` tags to npm through trusted
-publishing. Prerelease versions are published under the npm `next` dist tag.
+publishing with npm provenance. Prerelease versions are published under the npm `next` dist tag.
 
 ## Scope
 
@@ -123,16 +149,20 @@ Supported in this release:
 - static branches in JSX conditional class expressions
 - combined static arguments passed to `cn`, `clsx`, `classnames`, and `twMerge`
 - deterministic `cva` base, variant, and compound-variant class candidates
+- static JSX `class` and `className` attributes
 - static `class` attributes in `.html`, `.astro`, `.vue`, and `.svelte`
 - static Astro `class:list` values
 - `.js`, `.jsx`, `.ts`, `.tsx`, `.html`, `.astro`, `.vue`, and `.svelte`
 - opt-in similar class set detection
 - baseline filtering for CI adoption
+- baseline creation for first-run CI adoption
 - inline ignore comments for intentional duplicates
 - report-level ignore controls for generated files and known repeated class patterns
+- resolved config validation and printing
 - JSON schema for `tailwind-pattern-audit.config.json`
 - GitHub workflow annotation output
 - SARIF report output
+- JSON report performance metrics
 
 Deferred but planned:
 

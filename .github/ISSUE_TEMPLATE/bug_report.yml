@@ -1,0 +1,40 @@
+name: Bug report
+description: Report incorrect scanning, output, or CLI behavior.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include a minimal file, command, and config when possible.
+      placeholder: |
+        tailwind-pattern-audit --json
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "tailwind-pattern-audit 1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "Node 24, pnpm 10, Windows/macOS/Linux"
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant output
+      render: shell

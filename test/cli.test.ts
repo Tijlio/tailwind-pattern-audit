@@ -72,6 +72,69 @@ describe("CLI", () => {
     }
   });
 
+  it("validates and prints resolved config", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "twpa-cli-config-"));
+
+    try {
+      await writeFile(
+        path.join(cwd, "tailwind-pattern-audit.config.json"),
+        JSON.stringify({ minClasses: 4, hideLayoutOnly: true }),
+      );
+
+      const validate = await runCli(["config", "validate", "--cwd", cwd]);
+      const print = await runCli(["config", "print", "--cwd", cwd]);
+      const resolved = JSON.parse(print.stdout) as {
+        cwd: string;
+        minClasses: number;
+        hideLayoutOnly: boolean;
+      };
+
+      expect(validate.exitCode).toBe(0);
+      expect(validate.stdout).toContain("Configuration OK");
+      expect(validate.stderr).toBe("");
+      expect(print.exitCode).toBe(0);
+      expect(resolved.cwd).toBe(cwd);
+      expect(resolved.minClasses).toBe(4);
+      expect(resolved.hideLayoutOnly).toBe(true);
+    } finally {
+      await rm(cwd, { force: true, recursive: true });
+    }
+  });
+
+  it("creates baseline reports", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "twpa-cli-baseline-"));
+    const outputPath = path.join(cwd, "baseline.json");
+
+    try {
+      await cp(fixture, cwd, { recursive: true });
+
+      const result = await runCli([
+        "baseline",
+        "create",
+        "--cwd",
+        cwd,
+        "--baseline-output",
+        outputPath,
+        "--min-classes",
+        "4",
+        "--hide-layout-only",
+        "--baseline-quiet",
+      ]);
+      const baseline = JSON.parse(await readFile(outputPath, "utf8")) as {
+        groups: unknown[];
+        performance?: { filesPerSecond: number };
+      };
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toBe("");
+      expect(baseline.groups).toHaveLength(3);
+      expect(baseline.performance?.filesPerSecond).toEqual(expect.any(Number));
+    } finally {
+      await rm(cwd, { force: true, recursive: true });
+    }
+  });
+
   it("filters reports by recommendation kind", async () => {
     const result = await runCli(["--cwd", fixture, "--json", "--kind", "cva"]);
     const report = JSON.parse(result.stdout) as {

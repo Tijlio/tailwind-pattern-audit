@@ -1,6 +1,8 @@
 import type { AuditReport, ClassOccurrence, Diagnostic, DuplicateClassGroup } from "../types.js";
 import { getPrimaryPatternValue } from "./shared.js";
 
+type SarifLevel = "error" | "note" | "warning";
+
 interface SarifLog {
   version: "2.1.0";
   $schema: string;
@@ -25,12 +27,19 @@ interface SarifRule {
   shortDescription: {
     text: string;
   };
+  fullDescription?: {
+    text: string;
+  };
+  defaultConfiguration?: {
+    level: SarifLevel;
+  };
   helpUri?: string;
+  properties?: Record<string, unknown>;
 }
 
 interface SarifResult {
   ruleId: string;
-  level: "error" | "note" | "warning";
+  level: SarifLevel;
   message: {
     text: string;
   };
@@ -54,7 +63,11 @@ interface SarifLocation {
   };
 }
 
-const DUPLICATE_RULE_ID = "tailwind-pattern-audit/duplicate-pattern";
+const DUPLICATE_RULE_IDS = {
+  component: "tailwind-pattern-audit/duplicate-component-pattern",
+  cva: "tailwind-pattern-audit/duplicate-cva-pattern",
+  utility: "tailwind-pattern-audit/duplicate-utility-pattern",
+} satisfies Record<DuplicateClassGroup["recommendation"]["kind"], string>;
 
 export function generateSarif(report: AuditReport): string {
   const log: SarifLog = {
@@ -100,16 +113,36 @@ function buildRules(report: AuditReport): SarifRule[] {
   }
 
   return [
-    {
-      id: DUPLICATE_RULE_ID,
-      name: "Repeated Tailwind class pattern",
-      shortDescription: {
-        text: "A static Tailwind class pattern appears multiple times.",
-      },
-      helpUri: "https://github.com/Tijlio/tailwind-pattern-audit#readme",
-    },
+    buildDuplicateRule("component", "Repeated component candidate", "warning"),
+    buildDuplicateRule("cva", "Repeated CVA candidate", "warning"),
+    buildDuplicateRule("utility", "Repeated utility candidate", "note"),
     ...diagnosticRules.values(),
   ];
+}
+
+function buildDuplicateRule(
+  kind: DuplicateClassGroup["recommendation"]["kind"],
+  name: string,
+  level: SarifLevel,
+): SarifRule {
+  return {
+    id: DUPLICATE_RULE_IDS[kind],
+    name,
+    shortDescription: {
+      text: `A repeated Tailwind class pattern may be worth extracting as a ${kind}.`,
+    },
+    fullDescription: {
+      text: "Tailwind Pattern Audit groups normalized static class strings and reports repeated patterns with extraction recommendations.",
+    },
+    defaultConfiguration: {
+      level,
+    },
+    helpUri: "https://github.com/Tijlio/tailwind-pattern-audit#readme",
+    properties: {
+      tags: ["tailwind", "duplication", kind],
+      precision: "high",
+    },
+  };
 }
 
 function formatDuplicateResult(group: DuplicateClassGroup): SarifResult[] {
@@ -121,7 +154,7 @@ function formatDuplicateResult(group: DuplicateClassGroup): SarifResult[] {
 
   return [
     {
-      ruleId: DUPLICATE_RULE_ID,
+      ruleId: DUPLICATE_RULE_IDS[group.recommendation.kind],
       level: group.recommendation.priority === "low" ? "note" : "warning",
       message: {
         text: [
@@ -138,6 +171,9 @@ function formatDuplicateResult(group: DuplicateClassGroup): SarifResult[] {
         groupId: group.id,
         classCount: group.classCount,
         occurrenceCount: group.occurrenceCount,
+        priority: group.recommendation.priority,
+        kind: group.recommendation.kind,
+        files: group.recommendation.topFiles.map((file) => file.filePath),
         recommendation: group.recommendation,
         normalized: group.normalized,
       },

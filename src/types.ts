@@ -149,6 +149,14 @@ export interface AuditReport {
   similarGroups?: SimilarClassGroup[];
   diagnostics: Diagnostic[];
   durationMs: number;
+  performance?: AuditReportPerformance;
+}
+
+export interface AuditReportPerformance {
+  scanMs: number;
+  extractMs: number;
+  totalMs: number;
+  filesPerSecond: number;
 }
 
 export interface GateResult {

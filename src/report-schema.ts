@@ -33,8 +33,20 @@ export const AUDIT_REPORT_SCHEMA = {
       items: { $ref: "#/$defs/diagnostic" },
     },
     durationMs: { type: "integer", minimum: 0 },
+    performance: { $ref: "#/$defs/performance" },
   },
   $defs: {
+    performance: {
+      type: "object",
+      additionalProperties: false,
+      required: ["scanMs", "extractMs", "totalMs", "filesPerSecond"],
+      properties: {
+        scanMs: { type: "integer", minimum: 0 },
+        extractMs: { type: "integer", minimum: 0 },
+        totalMs: { type: "integer", minimum: 0 },
+        filesPerSecond: { type: "integer", minimum: 0 },
+      },
+    },
     duplicateClassGroup: {
       type: "object",
       additionalProperties: false,
