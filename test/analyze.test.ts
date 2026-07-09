@@ -162,6 +162,39 @@ const active = Astro.props.active;
     );
   });
 
+  it("extracts static class attributes from Vue and Svelte markup", async () => {
+    const fixture = await createFixture({
+      "src/Card.vue": `
+        <template>
+          <section class="rounded-md border bg-white p-4">Vue card</section>
+        </template>
+
+        <script setup>
+        const ignored = '<div class="rounded-md border bg-white p-4"></div>';
+        </script>
+      `,
+      "src/Card.svelte": `
+        <script>
+          const ignored = '<div class="rounded-md border bg-white p-4"></div>';
+        </script>
+
+        <article class="p-4 bg-white border rounded-md">Svelte card</article>
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture, minClasses: 4 });
+
+    expect(report.groups).toHaveLength(1);
+    expect(report.groups[0]).toMatchObject({
+      occurrenceCount: 2,
+      normalized: "bg-white border p-4 rounded-md",
+    });
+    expect(report.groups[0]?.occurrences.map((occurrence) => occurrence.filePath)).toEqual([
+      "src/Card.svelte",
+      "src/Card.vue",
+    ]);
+  });
+
   it("extracts CVA base, variant, and compound variant class candidates", async () => {
     const fixture = await createFixture({
       "src/button.ts": `

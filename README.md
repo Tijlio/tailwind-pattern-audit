@@ -4,7 +4,7 @@
 [![CI](https://github.com/Tijlio/tailwind-pattern-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/Tijlio/tailwind-pattern-audit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Find repeated Tailwind class patterns in JavaScript, TypeScript, HTML, and Astro projects.
+Find repeated Tailwind class patterns in JavaScript, TypeScript, HTML, Astro, Vue, and Svelte projects.
 
 Requires Node.js 20 or newer.
 
@@ -49,7 +49,7 @@ console.log(formatReport(report, "markdown"));
 ## GitHub Action
 
 ```yaml
-- uses: Tijlio/tailwind-pattern-audit@v0.1.6
+- uses: Tijlio/tailwind-pattern-audit@v0.1.7
   with:
     format: markdown
     output: tailwind-audit.md

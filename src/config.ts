@@ -11,7 +11,7 @@ import type {
   ResolvedAnalyzeOptions,
 } from "./types.js";
 
-export const DEFAULT_INCLUDE = ["**/*.{js,jsx,ts,tsx,html,astro}"];
+export const DEFAULT_INCLUDE = ["**/*.{js,jsx,ts,tsx,html,astro,vue,svelte}"];
 
 export const DEFAULT_EXCLUDE = [
   "**/node_modules/**",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7
+
+- Added static `class` attribute extraction for `.vue` and `.svelte` files.
+- Expanded default scan globs and starter config to include Vue and Svelte files.
+- Updated package and action descriptions for Vue and Svelte support.
+
 ## 0.1.6
 
 - Updated bundled GitHub Actions dependencies to current Node 24-based major versions.

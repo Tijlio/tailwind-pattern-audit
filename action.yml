@@ -1,5 +1,5 @@
 name: Tailwind Pattern Audit
-description: Find repeated Tailwind class patterns in JavaScript, TypeScript, HTML, and Astro projects.
+description: Find repeated Tailwind class patterns in JavaScript, TypeScript, HTML, Astro, Vue, and Svelte projects.
 author: Naum
 
 branding:

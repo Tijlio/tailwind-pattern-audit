@@ -19,7 +19,7 @@ import type { ClassOccurrence, Diagnostic, ExtractInput, Extractor } from "../ty
 
 export const htmlExtractor: Extractor = {
   id: "html",
-  extensions: [".html", ".astro"],
+  extensions: [".html", ".astro", ".vue", ".svelte"],
   extract(input) {
     return extractHtml(input);
   },
@@ -134,10 +134,18 @@ function walkNode(node: ParseNode, visit: (element: ElementNode) => void): void 
   for (const child of node.childNodes) {
     walkNode(child, visit);
   }
+
+  if (isTemplateNode(node)) {
+    walkNode(node.content, visit);
+  }
 }
 
 function isElementNode(node: ParseNode): node is ElementNode {
   return "attrs" in node;
+}
+
+function isTemplateNode(node: ParseNode): node is DefaultTreeAdapterTypes.Template {
+  return isElementNode(node) && "content" in node;
 }
 
 function addOccurrence(input: {
