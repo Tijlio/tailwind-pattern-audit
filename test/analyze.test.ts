@@ -136,6 +136,32 @@ const ignored = '<div class="rounded-md border bg-white p-4"></div>';
     ]);
   });
 
+  it("extracts static class:list values from Astro markup", async () => {
+    const fixture = await createFixture({
+      "src/page.html": `
+        <section class="rounded-md border bg-white p-4">HTML card</section>
+      `,
+      "src/Card.astro": `---
+const active = Astro.props.active;
+---
+<article class:list={["rounded-md border", { "bg-white p-4": active, hidden: false }]}>
+  Astro card
+</article>
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture, minClasses: 4 });
+
+    expect(report.groups).toHaveLength(1);
+    expect(report.groups[0]).toMatchObject({
+      occurrenceCount: 2,
+      normalized: "bg-white border p-4 rounded-md",
+    });
+    expect(report.groups[0]?.occurrences.map((occurrence) => occurrence.source.name)).toContain(
+      "class:list",
+    );
+  });
+
   it("extracts CVA base, variant, and compound variant class candidates", async () => {
     const fixture = await createFixture({
       "src/button.ts": `

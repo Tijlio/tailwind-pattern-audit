@@ -49,7 +49,7 @@ console.log(formatReport(report, "markdown"));
 ## GitHub Action
 
 ```yaml
-- uses: Tijlio/tailwind-pattern-audit@v0.1.4
+- uses: Tijlio/tailwind-pattern-audit@v0.1.5
   with:
     format: markdown
     output: tailwind-audit.md

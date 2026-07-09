@@ -1,5 +1,5 @@
 name: Tailwind Pattern Audit
-description: Find repeated Tailwind class patterns in JavaScript and TypeScript projects.
+description: Find repeated Tailwind class patterns in JavaScript, TypeScript, HTML, and Astro projects.
 author: Naum
 
 branding:
@@ -60,7 +60,7 @@ inputs:
   node-version:
     description: Node.js version used to run the npm package.
     required: false
-    default: "22"
+    default: "24"
   version:
     description: npm package version or dist tag to run.
     required: false

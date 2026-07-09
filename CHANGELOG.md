@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Added static Astro `class:list` extraction for string, array, object, logical, and conditional values.
+- Updated CI, release, and action defaults to Node.js 24.
+- Updated the GitHub Action metadata description for HTML and Astro support.
+
 ## 0.1.4
 
 - Added static `class` attribute extraction for `.html` and `.astro` files.
