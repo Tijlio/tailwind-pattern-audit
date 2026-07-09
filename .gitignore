@@ -7,5 +7,4 @@ coverage/
 *.tsbuildinfo
 
 # Local planning notes are intentionally kept out of the pushed repo.
-docs/
-
+docs/archive/Tailwind-Pattern-Audit-Project-Plan.md

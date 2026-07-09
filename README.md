@@ -16,6 +16,15 @@ pnpm tailwind-pattern-audit --format markdown --output tailwind-audit.md
 The tool focuses on deterministic evidence: duplicate static class strings, file and line
 references, and JSON/Markdown/SARIF output that other tools can consume.
 
+## Docs
+
+- [Getting started](docs/getting-started.md)
+- [CLI reference](docs/cli.md)
+- [Configuration](docs/config.md)
+- [GitHub Action](docs/github-action.md)
+- [SARIF and code scanning](docs/sarif-code-scanning.md)
+- [VS Code roadmap](docs/vscode-roadmap.md)
+
 ## CLI
 
 ```bash
