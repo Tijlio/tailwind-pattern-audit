@@ -36,7 +36,9 @@ Supported in this release:
 - `className="..."`
 - `className={"..."}`
 - static template literals
-- static arguments passed to `cn`, `clsx`, `classnames`, `cva`, and `twMerge`
+- static branches in JSX conditional class expressions
+- combined static arguments passed to `cn`, `clsx`, `classnames`, and `twMerge`
+- deterministic `cva` base, variant, and compound-variant class candidates
 - `.js`, `.jsx`, `.ts`, and `.tsx`
 
 Deferred but planned:

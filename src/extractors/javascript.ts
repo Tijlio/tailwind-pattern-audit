@@ -3,6 +3,7 @@ import path from "node:path";
 import { parse } from "@babel/parser";
 import traverseModule from "@babel/traverse";
 import type { NodePath, TraverseOptions } from "@babel/traverse";
+import { isExpression } from "@babel/types";
 import type {
   ArrayExpression,
   CallExpression,
@@ -43,6 +44,10 @@ export const javascriptExtractor: Extractor = {
 interface StaticValue {
   raw: string;
   node: Node;
+}
+
+interface HelperCandidate extends StaticValue {
+  name: string;
 }
 
 function extractJavaScript(input: ExtractInput): ExtractResult {
@@ -99,9 +104,9 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
         return;
       }
 
-      const value = extractJsxAttributeStaticValue(attribute);
+      const values = extractJsxAttributeStaticValues(attribute, input.options.functions);
 
-      if (!value) {
+      if (!values) {
         if (isConfiguredHelperClassExpression(attribute, input.options.functions)) {
           return;
         }
@@ -118,14 +123,16 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
         return;
       }
 
-      addOccurrence({
-        input,
-        occurrences,
-        raw: value.raw,
-        node: value.node,
-        kind: "jsxAttribute",
-        name: "className",
-      });
+      for (const value of values) {
+        addOccurrence({
+          input,
+          occurrences,
+          raw: value.raw,
+          node: value.node,
+          kind: "jsxAttribute",
+          name: "className",
+        });
+      }
     },
     CallExpression(callPath: NodePath<CallExpression>) {
       const call = callPath.node;
@@ -135,14 +142,18 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
         return;
       }
 
-      for (const value of extractStaticValuesFromExpressionList(call.arguments)) {
+      if (isNestedConfiguredHelperCall(callPath, input.options.functions)) {
+        return;
+      }
+
+      for (const value of extractHelperCandidates(call, calleeName)) {
         addOccurrence({
           input,
           occurrences,
           raw: value.raw,
           node: value.node,
           kind: "helperCall",
-          name: calleeName,
+          name: value.name,
         });
       }
     },
@@ -155,31 +166,47 @@ function isClassNameAttribute(attribute: JSXAttribute): boolean {
   return attribute.name.type === "JSXIdentifier" && attribute.name.name === "className";
 }
 
-function extractJsxAttributeStaticValue(attribute: JSXAttribute): StaticValue | undefined {
+function extractJsxAttributeStaticValues(
+  attribute: JSXAttribute,
+  functions: string[],
+): StaticValue[] | undefined {
   if (!attribute.value) {
     return undefined;
   }
 
   if (attribute.value.type === "StringLiteral") {
-    return {
-      raw: attribute.value.value,
-      node: attribute.value,
-    };
+    return [
+      {
+        raw: attribute.value.value,
+        node: attribute.value,
+      },
+    ];
   }
 
   if (attribute.value.type !== "JSXExpressionContainer") {
     return undefined;
   }
 
-  return extractDirectStaticValue(attribute.value);
+  return extractDirectStaticValues(attribute.value, functions);
 }
 
-function extractDirectStaticValue(container: JSXExpressionContainer): StaticValue | undefined {
+function extractDirectStaticValues(
+  container: JSXExpressionContainer,
+  functions: string[],
+): StaticValue[] | undefined {
   if (container.expression.type === "JSXEmptyExpression") {
     return undefined;
   }
 
-  return extractStaticValue(container.expression);
+  const expression = unwrapExpression(container.expression);
+
+  if (expression.type === "CallExpression" && isConfiguredHelperCall(expression, functions)) {
+    return undefined;
+  }
+
+  const values = extractStaticValues(expression);
+
+  return values.length > 0 ? values : undefined;
 }
 
 function isConfiguredHelperClassExpression(attribute: JSXAttribute, functions: string[]): boolean {
@@ -189,20 +216,132 @@ function isConfiguredHelperClassExpression(attribute: JSXAttribute, functions: s
 
   const expression = attribute.value.expression;
 
-  return (
-    expression.type === "CallExpression" &&
-    Boolean(getCalleeName(expression)) &&
-    functions.includes(getCalleeName(expression) ?? "")
+  return expression.type === "CallExpression" && isConfiguredHelperCall(expression, functions);
+}
+
+function isConfiguredHelperCall(call: CallExpression, functions: string[]): boolean {
+  const calleeName = getCalleeName(call);
+  return Boolean(calleeName && functions.includes(calleeName));
+}
+
+function isNestedConfiguredHelperCall(
+  callPath: NodePath<CallExpression>,
+  functions: string[],
+): boolean {
+  return Boolean(
+    callPath.findParent(
+      (parentPath) =>
+        parentPath.isCallExpression() &&
+        parentPath.node !== callPath.node &&
+        isConfiguredHelperCall(parentPath.node, functions),
+    ),
   );
+}
+
+function extractHelperCandidates(call: CallExpression, calleeName: string): HelperCandidate[] {
+  if (calleeName === "cva") {
+    return extractCvaCandidates(call);
+  }
+
+  const combined = combineStaticValues(extractStaticValuesFromExpressionList(call.arguments), call);
+
+  return combined ? [{ ...combined, name: calleeName }] : [];
+}
+
+function extractCvaCandidates(call: CallExpression): HelperCandidate[] {
+  const candidates: HelperCandidate[] = [];
+  const baseArgument = getExpressionArgument(call.arguments[0]);
+  const optionsArgument = getExpressionArgument(call.arguments[1]);
+
+  if (baseArgument) {
+    const base = combineStaticValues(extractStaticValues(baseArgument), baseArgument);
+
+    if (base) {
+      candidates.push({ ...base, name: "cva:base" });
+    }
+  }
+
+  const options = optionsArgument ? unwrapExpression(optionsArgument) : undefined;
+
+  if (!options || options.type !== "ObjectExpression") {
+    return candidates;
+  }
+
+  candidates.push(...extractCvaVariantCandidates(options));
+  candidates.push(...extractCvaCompoundVariantCandidates(options));
+
+  return candidates;
+}
+
+function extractCvaVariantCandidates(options: ObjectExpression): HelperCandidate[] {
+  const variants = getObjectPropertyExpression(options, "variants");
+
+  if (!variants || variants.type !== "ObjectExpression") {
+    return [];
+  }
+
+  return variants.properties.flatMap<HelperCandidate>((variantGroup): HelperCandidate[] => {
+    if (variantGroup.type !== "ObjectProperty" || !isExpression(variantGroup.value)) {
+      return [];
+    }
+
+    const variantValues = unwrapExpression(variantGroup.value);
+
+    if (variantValues.type !== "ObjectExpression") {
+      return [];
+    }
+
+    return variantValues.properties.flatMap<HelperCandidate>((variantOption): HelperCandidate[] => {
+      if (variantOption.type !== "ObjectProperty" || !isExpression(variantOption.value)) {
+        return [];
+      }
+
+      const value = combineStaticValues(
+        extractStaticValues(variantOption.value),
+        variantOption.value,
+      );
+
+      return value ? [{ ...value, name: "cva:variant" }] : [];
+    });
+  });
+}
+
+function extractCvaCompoundVariantCandidates(options: ObjectExpression): HelperCandidate[] {
+  const compoundVariants = getObjectPropertyExpression(options, "compoundVariants");
+
+  if (!compoundVariants || compoundVariants.type !== "ArrayExpression") {
+    return [];
+  }
+
+  return compoundVariants.elements.flatMap<HelperCandidate>((element): HelperCandidate[] => {
+    if (!element || element.type === "SpreadElement") {
+      return [];
+    }
+
+    const compoundVariant = unwrapExpression(element);
+
+    if (compoundVariant.type !== "ObjectExpression") {
+      return [];
+    }
+
+    return ["class", "className"].flatMap<HelperCandidate>((propertyName): HelperCandidate[] => {
+      const value = getObjectPropertyExpression(compoundVariant, propertyName);
+      const combined = value ? combineStaticValues(extractStaticValues(value), value) : undefined;
+
+      return combined ? [{ ...combined, name: "cva:compoundVariant" }] : [];
+    });
+  });
 }
 
 function extractStaticValuesFromExpressionList(values: CallExpression["arguments"]): StaticValue[] {
   return values.flatMap((value) => {
-    if (value.type === "ArgumentPlaceholder" || value.type === "SpreadElement") {
+    const expression = getExpressionArgument(value);
+
+    if (!expression) {
       return [];
     }
 
-    return extractStaticValues(value);
+    return extractStaticValues(expression);
   });
 }
 
@@ -222,7 +361,7 @@ function extractStaticValues(expression: Expression): StaticValue[] {
     return extractStaticValuesFromObject(unwrapped);
   }
 
-  if (unwrapped.type === "LogicalExpression") {
+  if (unwrapped.type === "LogicalExpression" && !isDefinitelyFalse(unwrapped.left)) {
     return extractStaticValues(unwrapped.right);
   }
 
@@ -246,6 +385,10 @@ function extractStaticValuesFromArray(expression: ArrayExpression): StaticValue[
 function extractStaticValuesFromObject(expression: ObjectExpression): StaticValue[] {
   return expression.properties.flatMap<StaticValue>((property): StaticValue[] => {
     if (property.type === "ObjectMethod" || property.type === "SpreadElement") {
+      return [];
+    }
+
+    if (!isExpression(property.value) || isDefinitelyFalse(property.value)) {
       return [];
     }
 
@@ -282,6 +425,17 @@ function extractStaticValue(expression: Expression): StaticValue | undefined {
   return undefined;
 }
 
+function combineStaticValues(values: StaticValue[], node: Node): StaticValue | undefined {
+  if (values.length === 0) {
+    return undefined;
+  }
+
+  return {
+    raw: values.map((value) => value.raw).join(" "),
+    node: values[0]?.node ?? node,
+  };
+}
+
 function unwrapExpression(expression: Expression): Expression {
   let current = expression;
 
@@ -298,6 +452,54 @@ function unwrapExpression(expression: Expression): Expression {
 
 function templateLiteralToString(node: TemplateLiteral): string {
   return node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join("");
+}
+
+function getExpressionArgument(
+  value: CallExpression["arguments"][number] | undefined,
+): Expression | undefined {
+  if (!value || value.type === "ArgumentPlaceholder" || value.type === "SpreadElement") {
+    return undefined;
+  }
+
+  return value;
+}
+
+function getObjectPropertyExpression(
+  object: ObjectExpression,
+  name: string,
+): Expression | undefined {
+  for (const property of object.properties) {
+    if (property.type !== "ObjectProperty" || !isObjectPropertyKey(property, name)) {
+      continue;
+    }
+
+    return isExpression(property.value) ? property.value : undefined;
+  }
+
+  return undefined;
+}
+
+function isObjectPropertyKey(
+  property: Extract<ObjectExpression["properties"][number], { type: "ObjectProperty" }>,
+  name: string,
+): boolean {
+  if (property.computed) {
+    return false;
+  }
+
+  if (property.key.type === "Identifier") {
+    return property.key.name === name;
+  }
+
+  return property.key.type === "StringLiteral" && property.key.value === name;
+}
+
+function isDefinitelyFalse(expression: Expression): boolean {
+  const unwrapped = unwrapExpression(expression);
+
+  return (
+    (unwrapped.type === "BooleanLiteral" && !unwrapped.value) || unwrapped.type === "NullLiteral"
+  );
 }
 
 function getCalleeName(call: CallExpression): string | undefined {

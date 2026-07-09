@@ -63,11 +63,94 @@ describe("analyzeFiles", () => {
     ).toBe(true);
   });
 
+  it("extracts static branches from JSX conditional className expressions", async () => {
+    const fixture = await createFixture({
+      "src/Conditional.tsx": `
+        export function Conditional({ active }: { active: boolean }) {
+          return (
+            <button className={active ? "px-4 py-2 text-sm font-medium" : "px-2 py-1 text-xs font-medium"} />
+          );
+        }
+      `,
+      "src/Static.tsx": `
+        export function Static() {
+          return <a className="font-medium text-sm py-2 px-4" />;
+        }
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture });
+
+    expect(report.groups).toHaveLength(1);
+    expect(report.groups[0]?.occurrenceCount).toBe(2);
+    expect(report.diagnostics).toHaveLength(0);
+  });
+
+  it("combines static array and object helper arguments into one class pattern", async () => {
+    const fixture = await createFixture({
+      "src/Helpers.tsx": `
+        export function A({ active }: { active: boolean }) {
+          return <div className={cn(["rounded-md", "border"], { "bg-white p-4": active }, "text-sm")} />;
+        }
+
+        export function B() {
+          return <section className={clsx("text-sm p-4 bg-white border rounded-md")} />;
+        }
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture });
+
+    expect(report.groups).toHaveLength(1);
+    expect(report.groups[0]?.occurrenceCount).toBe(2);
+    expect(report.groups[0]?.rawValues.map((rawValue) => rawValue.value)).toEqual([
+      "rounded-md border bg-white p-4 text-sm",
+      "text-sm p-4 bg-white border rounded-md",
+    ]);
+  });
+
+  it("extracts CVA base, variant, and compound variant class candidates", async () => {
+    const fixture = await createFixture({
+      "src/button.ts": `
+        import { cva } from "class-variance-authority";
+
+        export const button = cva("inline-flex items-center rounded-md px-4 py-2", {
+          variants: {
+            intent: {
+              primary: "bg-blue-600 text-white hover:bg-blue-700",
+              secondary: "bg-white text-slate-900 hover:bg-slate-50"
+            }
+          },
+          compoundVariants: [
+            { intent: "primary", class: "shadow-sm ring-1 ring-blue-500" }
+          ]
+        });
+
+        export const linkButton = cva("py-2 inline-flex rounded-md items-center px-4", {
+          variants: {
+            intent: {
+              primary: "hover:bg-blue-700 text-white bg-blue-600"
+            }
+          }
+        });
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture });
+    const sourceNames = report.groups.flatMap((group) =>
+      group.occurrences.map((occurrence) => occurrence.source.name),
+    );
+
+    expect(report.groups).toHaveLength(2);
+    expect(sourceNames).toContain("cva:base");
+    expect(sourceNames).toContain("cva:variant");
+  });
+
   it("records dynamic className expressions as diagnostics instead of duplicate evidence", async () => {
     const fixture = await createFixture({
       "src/Dynamic.tsx": `
         export function Dynamic({ active }: { active: boolean }) {
-          return <div className={active ? "text-sm font-medium px-4" : "text-xs font-medium px-2"} />;
+          return <div className={active ? classes.active : classes.inactive} />;
         }
       `,
     });
