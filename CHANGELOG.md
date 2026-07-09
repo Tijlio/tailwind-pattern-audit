@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2
 
 - Added layout-only duplicate filtering with `--hide-layout-only`.
 - Added compact PR-comment report output with `--format pr` and `--pr`.
