@@ -5,7 +5,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ["dist/**", "coverage/**", "docs/**"],
+    ignores: ["dist/**", "coverage/**", "docs/**", "test/fixtures/**"],
   },
   {
     files: ["**/*.ts"],
