@@ -1,4 +1,4 @@
-import type { AuditReport, DuplicateClassGroup } from "../types.js";
+import type { AuditReport, DuplicateClassGroup, SimilarClassGroup } from "../types.js";
 
 export function generateTerminal(report: AuditReport): string {
   const lines = [
@@ -7,6 +7,7 @@ export function generateTerminal(report: AuditReport): string {
     `Scanned files: ${report.scannedFiles}`,
     `Static class occurrences: ${report.occurrences}`,
     `Duplicate groups: ${report.groups.length}`,
+    `Similar groups: ${report.similarGroups?.length ?? 0}`,
     `By priority: ${summarizePriorities(report)}`,
     `By kind: ${summarizeKinds(report)}`,
     `Duration: ${report.durationMs}ms`,
@@ -24,6 +25,18 @@ export function generateTerminal(report: AuditReport): string {
       lines.push(
         `Showing 20 of ${report.groups.length} groups. Use --json or --markdown for full output.`,
       );
+    }
+  }
+
+  if (report.similarGroups && report.similarGroups.length > 0) {
+    lines.push("", "Similar class sets:", "");
+
+    for (const group of report.similarGroups.slice(0, 10)) {
+      lines.push(...formatSimilarGroup(group), "");
+    }
+
+    if (report.similarGroups.length > 10) {
+      lines.push(`Showing 10 of ${report.similarGroups.length} similar groups.`);
     }
   }
 
@@ -79,4 +92,18 @@ function formatGroup(group: DuplicateClassGroup): string[] {
   }
 
   return lines;
+}
+
+function formatSimilarGroup(group: SimilarClassGroup): string[] {
+  const [first, second] = group.candidates;
+
+  if (!first || !second) {
+    return [];
+  }
+
+  return [
+    `${group.id}: ${Math.round(group.similarity * 100)}% similar, ${group.sharedTokens.length} shared classes`,
+    `  ${first.rawValues[0]?.value ?? first.normalized}`,
+    `  ~ ${second.rawValues[0]?.value ?? second.normalized}`,
+  ];
 }

@@ -13,6 +13,9 @@ export interface AnalyzeProjectOptions {
   priority?: RecommendationPriority[];
   kind?: RecommendationKind[];
   hideLayoutOnly?: boolean;
+  similar?: boolean;
+  minSimilarity?: number;
+  maxSimilarGroups?: number;
   configFile?: string | false;
   failOn?: FailOnCondition[];
   maxGroups?: number;
@@ -33,6 +36,9 @@ export interface ResolvedAnalyzeOptions {
   priority: RecommendationPriority[];
   kind: RecommendationKind[];
   hideLayoutOnly: boolean;
+  similar: boolean;
+  minSimilarity: number;
+  maxSimilarGroups: number;
   configFile: string | false | undefined;
   failOn: FailOnCondition[];
   maxGroups?: number;
@@ -96,6 +102,24 @@ export interface DuplicateClassRecommendation {
   }>;
 }
 
+export interface SimilarClassGroup {
+  id: string;
+  similarity: number;
+  sharedTokens: string[];
+  candidates: SimilarClassCandidate[];
+}
+
+export interface SimilarClassCandidate {
+  normalized: string;
+  classCount: number;
+  occurrenceCount: number;
+  rawValues: Array<{
+    value: string;
+    count: number;
+  }>;
+  occurrences: ClassOccurrence[];
+}
+
 export interface Diagnostic {
   severity: "info" | "warning" | "error";
   code: string;
@@ -112,6 +136,7 @@ export interface AuditReport {
   scannedFiles: number;
   occurrences: number;
   groups: DuplicateClassGroup[];
+  similarGroups?: SimilarClassGroup[];
   diagnostics: Diagnostic[];
   durationMs: number;
 }

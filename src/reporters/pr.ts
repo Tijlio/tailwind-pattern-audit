@@ -1,12 +1,14 @@
-import type { AuditReport, DuplicateClassGroup } from "../types.js";
+import type { AuditReport, DuplicateClassGroup, SimilarClassGroup } from "../types.js";
 
 const PR_CANDIDATE_LIMIT = 10;
+const PR_SIMILAR_LIMIT = 5;
 
 export function generatePr(report: AuditReport): string {
   const lines = [
     "## Tailwind Pattern Audit",
     "",
     `- Duplicate groups: ${report.groups.length}`,
+    `- Similar groups: ${report.similarGroups?.length ?? 0}`,
     `- Static class occurrences: ${report.occurrences}`,
     `- Scanned files: ${report.scannedFiles}`,
     `- Priority summary: ${summarizePriorities(report)}`,
@@ -38,6 +40,20 @@ export function generatePr(report: AuditReport): string {
         "",
         `Showing 10 of ${report.groups.length} groups. Use markdown or JSON for full evidence.`,
       );
+    }
+  }
+
+  if (report.similarGroups && report.similarGroups.length > 0) {
+    lines.push("", "### Similar Candidates", "");
+    lines.push("| ID | Similarity | Shared | Patterns |");
+    lines.push("| --- | ---: | ---: | --- |");
+
+    for (const group of report.similarGroups.slice(0, PR_SIMILAR_LIMIT)) {
+      lines.push(formatSimilarRow(group));
+    }
+
+    if (report.similarGroups.length > PR_SIMILAR_LIMIT) {
+      lines.push("", `Showing 5 of ${report.similarGroups.length} similar groups.`);
     }
   }
 
@@ -77,6 +93,23 @@ function formatCandidateRow(group: DuplicateClassGroup): string {
     String(group.classCount),
     formatInlineCodeForTable(group.rawValues[0]?.value ?? group.normalized),
     formatTopFiles(group),
+  ].join(" | ")} |`;
+}
+
+function formatSimilarRow(group: SimilarClassGroup): string {
+  const [first, second] = group.candidates;
+
+  if (!first || !second) {
+    return `| \`${group.id}\` | ${Math.round(group.similarity * 100)}% | ${group.sharedTokens.length} |  |`;
+  }
+
+  return `| ${[
+    `\`${group.id}\``,
+    `${Math.round(group.similarity * 100)}%`,
+    String(group.sharedTokens.length),
+    `${formatInlineCodeForTable(first.rawValues[0]?.value ?? first.normalized)}<br>${formatInlineCodeForTable(
+      second.rawValues[0]?.value ?? second.normalized,
+    )}`,
   ].join(" | ")} |`;
 }
 

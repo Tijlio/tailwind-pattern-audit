@@ -89,6 +89,24 @@ describe("CLI", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("prints similar groups in JSON reports when enabled", async () => {
+    const result = await runCli([
+      "--cwd",
+      fixture,
+      "--json",
+      "--similar",
+      "--min-similarity",
+      "0.7",
+    ]);
+    const report = JSON.parse(result.stdout) as {
+      similarGroups?: unknown[];
+    };
+
+    expect(result.exitCode).toBe(0);
+    expect(report.similarGroups).toBeDefined();
+    expect(result.stderr).toBe("");
+  });
+
   it("returns a non-zero exit code when CI gate conditions fail", async () => {
     const result = await runCli(["--cwd", fixture, "--json", "--fail-on", "duplicates"]);
 

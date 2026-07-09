@@ -14,10 +14,24 @@ import type {
   DuplicateClassGroup,
   Extractor,
   ResolvedAnalyzeOptions,
+  SimilarClassCandidate,
+  SimilarClassGroup,
 } from "./types.js";
 import { TOOL_VERSION } from "./version.js";
 
 const EXTRACTORS: Extractor[] = [javascriptExtractor];
+const SIMILARITY_CANDIDATE_LIMIT = 1000;
+
+interface SimilarityCandidate extends SimilarClassCandidate {
+  tokens: string[];
+  tokenSet: Set<string>;
+}
+
+interface SimilarityPair {
+  similarity: number;
+  sharedTokens: string[];
+  candidates: [SimilarClassCandidate, SimilarClassCandidate];
+}
 
 export async function analyzeProject(options: AnalyzeProjectOptions = {}): Promise<AuditReport> {
   const resolvedOptions = await resolveOptions(options);
@@ -79,6 +93,7 @@ async function analyzeFilesWithResolvedOptions(
   }
 
   const groups = buildDuplicateGroups(occurrences, options);
+  const similarGroups = options.similar ? buildSimilarGroups(occurrences, options) : undefined;
 
   return {
     schemaVersion: 1,
@@ -87,6 +102,7 @@ async function analyzeFilesWithResolvedOptions(
     scannedFiles,
     occurrences: occurrences.length,
     groups,
+    ...(similarGroups ? { similarGroups } : {}),
     diagnostics,
     durationMs: Math.round(performance.now() - startedAt),
   };
@@ -129,6 +145,177 @@ function buildDuplicateGroups(
       id: `twpa-${String(index + 1).padStart(3, "0")}`,
       ...group,
     }));
+}
+
+function buildSimilarGroups(
+  occurrences: ClassOccurrence[],
+  options: ResolvedAnalyzeOptions,
+): SimilarClassGroup[] {
+  if (options.maxSimilarGroups === 0) {
+    return [];
+  }
+
+  const candidates = buildSimilarityCandidates(occurrences, options);
+  const tokenIndex = buildSimilarityTokenIndex(candidates);
+  const pairs: SimilarityPair[] = [];
+  const seenPairs = new Set<string>();
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
+
+    if (!candidate) {
+      continue;
+    }
+
+    const relatedIndexes = new Set<number>();
+
+    for (const token of candidate.tokens) {
+      for (const relatedIndex of tokenIndex.get(token) ?? []) {
+        if (relatedIndex > index) {
+          relatedIndexes.add(relatedIndex);
+        }
+      }
+    }
+
+    for (const relatedIndex of relatedIndexes) {
+      const relatedCandidate = candidates[relatedIndex];
+
+      if (!relatedCandidate) {
+        continue;
+      }
+
+      const pairKey = `${index}:${relatedIndex}`;
+
+      if (seenPairs.has(pairKey)) {
+        continue;
+      }
+
+      seenPairs.add(pairKey);
+
+      const similarity = calculateJaccardSimilarity(candidate.tokenSet, relatedCandidate.tokenSet);
+
+      if (similarity < options.minSimilarity) {
+        continue;
+      }
+
+      pairs.push({
+        similarity,
+        sharedTokens: getSharedTokens(candidate, relatedCandidate),
+        candidates: [toSimilarityCandidate(candidate), toSimilarityCandidate(relatedCandidate)],
+      });
+    }
+  }
+
+  return pairs
+    .sort(compareSimilarityPairs)
+    .slice(0, options.maxSimilarGroups)
+    .map((pair, index) => ({
+      id: `twpa-sim-${String(index + 1).padStart(3, "0")}`,
+      similarity: Number(pair.similarity.toFixed(3)),
+      sharedTokens: pair.sharedTokens,
+      candidates: pair.candidates,
+    }));
+}
+
+function buildSimilarityCandidates(
+  occurrences: ClassOccurrence[],
+  options: ResolvedAnalyzeOptions,
+): SimilarityCandidate[] {
+  const grouped = new Map<string, ClassOccurrence[]>();
+
+  for (const occurrence of occurrences) {
+    if (occurrence.tokens.length < options.minClasses) {
+      continue;
+    }
+
+    const current = grouped.get(occurrence.normalized) ?? [];
+    current.push(occurrence);
+    grouped.set(occurrence.normalized, current);
+  }
+
+  return [...grouped.entries()]
+    .map(([normalized, groupOccurrences]) => {
+      const sortedOccurrences = groupOccurrences.sort(compareOccurrences);
+      const tokens = sortedOccurrences[0]?.tokens ?? [];
+
+      return {
+        normalized,
+        tokens,
+        tokenSet: new Set(tokens),
+        occurrences: sortedOccurrences,
+        classCount: tokens.length,
+        occurrenceCount: sortedOccurrences.length,
+        rawValues: buildRawValues(sortedOccurrences),
+      };
+    })
+    .filter((candidate) => !options.hideLayoutOnly || !isLayoutOnlyCandidate(candidate))
+    .sort(compareSimilarityCandidates)
+    .slice(0, SIMILARITY_CANDIDATE_LIMIT);
+}
+
+function buildSimilarityTokenIndex(candidates: SimilarityCandidate[]): Map<string, Set<number>> {
+  const tokenIndex = new Map<string, Set<number>>();
+
+  for (const [index, candidate] of candidates.entries()) {
+    for (const token of candidate.tokens) {
+      const indexes = tokenIndex.get(token) ?? new Set<number>();
+      indexes.add(index);
+      tokenIndex.set(token, indexes);
+    }
+  }
+
+  return tokenIndex;
+}
+
+function calculateJaccardSimilarity(a: Set<string>, b: Set<string>): number {
+  let shared = 0;
+
+  for (const token of a) {
+    if (b.has(token)) {
+      shared += 1;
+    }
+  }
+
+  return shared / (a.size + b.size - shared);
+}
+
+function getSharedTokens(a: SimilarityCandidate, b: SimilarityCandidate): string[] {
+  return a.tokens.filter((token) => b.tokenSet.has(token));
+}
+
+function toSimilarityCandidate(candidate: SimilarityCandidate): SimilarClassCandidate {
+  return {
+    normalized: candidate.normalized,
+    classCount: candidate.classCount,
+    occurrenceCount: candidate.occurrenceCount,
+    rawValues: candidate.rawValues,
+    occurrences: candidate.occurrences,
+  };
+}
+
+function isLayoutOnlyCandidate(candidate: SimilarityCandidate): boolean {
+  return candidate.tokens.length > 0 && candidate.tokens.every(isLayoutToken);
+}
+
+function compareSimilarityCandidates(a: SimilarityCandidate, b: SimilarityCandidate): number {
+  return (
+    b.occurrenceCount - a.occurrenceCount ||
+    b.classCount - a.classCount ||
+    a.normalized.localeCompare(b.normalized)
+  );
+}
+
+function compareSimilarityPairs(a: SimilarityPair, b: SimilarityPair): number {
+  return (
+    b.similarity - a.similarity ||
+    getPairOccurrenceCount(b) - getPairOccurrenceCount(a) ||
+    b.sharedTokens.length - a.sharedTokens.length ||
+    a.candidates[0].normalized.localeCompare(b.candidates[0].normalized)
+  );
+}
+
+function getPairOccurrenceCount(pair: SimilarityPair): number {
+  return pair.candidates.reduce((total, candidate) => total + candidate.occurrenceCount, 0);
 }
 
 function matchesRecommendationFilters(

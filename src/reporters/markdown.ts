@@ -1,4 +1,4 @@
-import type { AuditReport, DuplicateClassGroup } from "../types.js";
+import type { AuditReport, DuplicateClassGroup, SimilarClassGroup } from "../types.js";
 
 const TOP_CANDIDATE_LIMIT = 5;
 
@@ -10,6 +10,7 @@ export function generateMarkdown(report: AuditReport): string {
     `- Scanned files: ${report.scannedFiles}`,
     `- Static class occurrences: ${report.occurrences}`,
     `- Duplicate groups: ${report.groups.length}`,
+    `- Similar groups: ${report.similarGroups?.length ?? 0}`,
     `- Priority summary: ${summarizePriorities(report)}`,
     `- Kind summary: ${summarizeKinds(report)}`,
     `- Duration: ${report.durationMs}ms`,
@@ -23,6 +24,14 @@ export function generateMarkdown(report: AuditReport): string {
 
     for (const group of report.groups) {
       lines.push(...formatGroup(group), "");
+    }
+  }
+
+  if (report.similarGroups && report.similarGroups.length > 0) {
+    lines.push("## Similar Groups", "");
+
+    for (const group of report.similarGroups) {
+      lines.push(...formatSimilarGroup(group), "");
     }
   }
 
@@ -155,6 +164,41 @@ function formatGroup(group: DuplicateClassGroup): string[] {
   }
 
   return lines;
+}
+
+function formatSimilarGroup(group: SimilarClassGroup): string[] {
+  const [first, second] = group.candidates;
+
+  if (!first || !second) {
+    return [];
+  }
+
+  return [
+    `### ${group.id}`,
+    "",
+    `- Similarity: ${Math.round(group.similarity * 100)}%`,
+    `- Shared classes: ${group.sharedTokens.length}`,
+    "",
+    "| Candidate | Occurrences | Classes | Pattern |",
+    "| --- | ---: | ---: | --- |",
+    formatSimilarCandidateRow(first),
+    formatSimilarCandidateRow(second),
+    "",
+    "Shared tokens:",
+    "",
+    "```text",
+    group.sharedTokens.join(" "),
+    "```",
+  ];
+}
+
+function formatSimilarCandidateRow(candidate: SimilarClassGroup["candidates"][number]): string {
+  return `| ${[
+    candidate.occurrences[0]?.filePath ?? "",
+    String(candidate.occurrenceCount),
+    String(candidate.classCount),
+    formatInlineCodeForTable(candidate.rawValues[0]?.value ?? candidate.normalized),
+  ].join(" | ")} |`;
 }
 
 function escapeMarkdownTable(value: string): string {

@@ -70,6 +70,18 @@ describe("config validation", () => {
 
     await expect(analyzeProject({ cwd })).rejects.toThrow(/"hideLayoutOnly" must be a boolean/);
   });
+
+  it("rejects invalid similarity thresholds from config", async () => {
+    const cwd = await createTempProject({
+      "tailwind-pattern-audit.config.json": JSON.stringify({
+        minSimilarity: 1.5,
+      }),
+    });
+
+    await expect(analyzeProject({ cwd })).rejects.toThrow(
+      /"minSimilarity" must be a number greater than 0 and up to 1/,
+    );
+  });
 });
 
 async function createTempProject(files: Record<string, string> = {}): Promise<string> {

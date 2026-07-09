@@ -21,4 +21,6 @@ export type {
   FailOnCondition,
   GateResult,
   ReportFormat,
+  SimilarClassCandidate,
+  SimilarClassGroup,
 } from "./types.js";

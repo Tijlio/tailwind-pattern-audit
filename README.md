@@ -28,6 +28,7 @@ tailwind-pattern-audit --min-classes 4
 tailwind-pattern-audit --priority high medium
 tailwind-pattern-audit --kind component cva
 tailwind-pattern-audit --hide-layout-only
+tailwind-pattern-audit --similar --min-similarity 0.7
 tailwind-pattern-audit --format pr
 tailwind-pattern-audit --include "src/**/*.{ts,tsx}"
 tailwind-pattern-audit --fail-on duplicates --max-groups 0
@@ -48,13 +49,15 @@ console.log(formatReport(report, "markdown"));
 ## GitHub Action
 
 ```yaml
-- uses: Tijlio/tailwind-pattern-audit@v0.1.2
+- uses: Tijlio/tailwind-pattern-audit@v0.1.3
   with:
     format: markdown
     output: tailwind-audit.md
     fail-on: duplicates
     max-groups: 0
     hide-layout-only: true
+    similar: true
+    min-similarity: 0.7
     node-version: 22
 ```
 

@@ -43,6 +43,9 @@ const CONFIG_KEYS = new Set([
   "priority",
   "kind",
   "hideLayoutOnly",
+  "similar",
+  "minSimilarity",
+  "maxSimilarGroups",
   "failOn",
   "maxGroups",
   "maxOccurrences",
@@ -76,6 +79,9 @@ export async function resolveOptions(
   const priority = options.priority ?? config.priority ?? [];
   const kind = options.kind ?? config.kind ?? [];
   const hideLayoutOnly = options.hideLayoutOnly ?? config.hideLayoutOnly ?? false;
+  const similar = options.similar ?? config.similar ?? false;
+  const minSimilarity = options.minSimilarity ?? config.minSimilarity ?? 0.75;
+  const maxSimilarGroups = options.maxSimilarGroups ?? config.maxSimilarGroups ?? 20;
   const failOn = options.failOn ?? config.failOn ?? [];
   const maxGroups = options.maxGroups ?? config.maxGroups;
   const maxOccurrences = options.maxOccurrences ?? config.maxOccurrences;
@@ -90,6 +96,9 @@ export async function resolveOptions(
     priority,
     kind,
     hideLayoutOnly,
+    similar,
+    minSimilarity,
+    maxSimilarGroups,
     configFile: options.configFile,
     failOn,
     maxGroups,
@@ -165,6 +174,13 @@ function validateConfigShape(config: unknown, source: string): ConfigShape {
     priority: validateOptionalRecommendationPriority(input.priority, source),
     kind: validateOptionalRecommendationKind(input.kind, source),
     hideLayoutOnly: validateOptionalBoolean(input.hideLayoutOnly, "hideLayoutOnly", source),
+    similar: validateOptionalBoolean(input.similar, "similar", source),
+    minSimilarity: validateOptionalSimilarity(input.minSimilarity, "minSimilarity", source),
+    maxSimilarGroups: validateOptionalNonNegativeInteger(
+      input.maxSimilarGroups,
+      "maxSimilarGroups",
+      source,
+    ),
     failOn: validateOptionalFailOn(input.failOn, source),
     maxGroups: validateOptionalNonNegativeInteger(input.maxGroups, "maxGroups", source),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -186,6 +202,13 @@ function validateResolvedOptions(options: ResolvedAnalyzeOptions): ResolvedAnaly
     priority: validateRecommendationPriority(options.priority, "options"),
     kind: validateRecommendationKind(options.kind, "options"),
     hideLayoutOnly: validateBoolean(options.hideLayoutOnly, "hideLayoutOnly", "options"),
+    similar: validateBoolean(options.similar, "similar", "options"),
+    minSimilarity: validateSimilarity(options.minSimilarity, "minSimilarity", "options"),
+    maxSimilarGroups: validateNonNegativeInteger(
+      options.maxSimilarGroups,
+      "maxSimilarGroups",
+      "options",
+    ),
     failOn: validateFailOn(options.failOn, "options"),
     maxGroups: validateOptionalNonNegativeInteger(options.maxGroups, "maxGroups", "options"),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -255,6 +278,14 @@ function validateOptionalNonNegativeInteger(
   return value;
 }
 
+function validateNonNegativeInteger(value: unknown, name: string, source: string): number {
+  if (!Number.isInteger(value) || typeof value !== "number" || value < 0) {
+    throw new ConfigValidationError(`${source}: "${name}" must be a non-negative integer.`);
+  }
+
+  return value;
+}
+
 function validateOptionalFailOn(value: unknown, source: string): FailOnCondition[] | undefined {
   if (value === undefined) {
     return undefined;
@@ -273,6 +304,28 @@ function validateOptionalBoolean(
   }
 
   return validateBoolean(value, name, source);
+}
+
+function validateOptionalSimilarity(
+  value: unknown,
+  name: string,
+  source: string,
+): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return validateSimilarity(value, name, source);
+}
+
+function validateSimilarity(value: unknown, name: string, source: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || value > 1) {
+    throw new ConfigValidationError(
+      `${source}: "${name}" must be a number greater than 0 and up to 1.`,
+    );
+  }
+
+  return value;
 }
 
 function validateBoolean(value: unknown, name: string, source: string): boolean {

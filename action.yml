@@ -32,6 +32,15 @@ inputs:
   hide-layout-only:
     description: Hide groups made only of layout primitives.
     required: false
+  similar:
+    description: Detect near-duplicate class sets.
+    required: false
+  min-similarity:
+    description: Minimum Jaccard similarity for near-duplicate groups.
+    required: false
+  max-similar-groups:
+    description: Maximum near-duplicate groups to report.
+    required: false
   format:
     description: "Output format: terminal, json, markdown, or pr."
     required: false
@@ -99,6 +108,18 @@ runs:
 
         if [ "${{ inputs.hide-layout-only }}" = "true" ]; then
           args+=(--hide-layout-only)
+        fi
+
+        if [ "${{ inputs.similar }}" = "true" ]; then
+          args+=(--similar)
+        fi
+
+        if [ -n "${{ inputs.min-similarity }}" ]; then
+          args+=(--min-similarity "${{ inputs.min-similarity }}")
+        fi
+
+        if [ -n "${{ inputs.max-similar-groups }}" ]; then
+          args+=(--max-similar-groups "${{ inputs.max-similar-groups }}")
         fi
 
         if [ -n "${{ inputs.output }}" ]; then

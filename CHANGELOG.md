@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+- Added opt-in near-duplicate class set detection with `--similar`.
+- Added `--min-similarity` and `--max-similar-groups` controls.
+- Added similar-group output to terminal, Markdown, PR, and JSON reports.
+
 ## 0.1.2
 
 - Added layout-only duplicate filtering with `--hide-layout-only`.

@@ -21,6 +21,20 @@ describe("AUDIT_REPORT_SCHEMA", () => {
     expect(validate(parsed), JSON.stringify(validate.errors, null, 2)).toBe(true);
   });
 
+  it("validates generated JSON reports with similar groups", async () => {
+    const ajv = new Ajv2020();
+    const validate = ajv.compile(AUDIT_REPORT_SCHEMA);
+    const report = await analyzeProject({
+      cwd: path.join(dirname, "fixtures/next-shadcn"),
+      minClasses: 4,
+      similar: true,
+      minSimilarity: 0.6,
+    });
+    const parsed = JSON.parse(formatReport(report, "json")) as unknown;
+
+    expect(validate(parsed), JSON.stringify(validate.errors, null, 2)).toBe(true);
+  });
+
   it("rejects report objects with undeclared fields", () => {
     const ajv = new Ajv2020();
     const validate = ajv.compile(AUDIT_REPORT_SCHEMA);

@@ -195,6 +195,35 @@ describe("analyzeFiles", () => {
     expect(report.groups).toHaveLength(1);
     expect(report.groups[0]?.normalized).toBe("bg-white border p-4 rounded-md");
   });
+
+  it("detects similar static class sets when enabled", async () => {
+    const fixture = await createFixture({
+      "src/One.tsx": `
+        export function One() {
+          return <button className="rounded-md border bg-white p-4 text-sm font-medium" />;
+        }
+      `,
+      "src/Two.tsx": `
+        export function Two() {
+          return <a className="rounded-md border bg-card p-4 text-sm font-medium" />;
+        }
+      `,
+    });
+
+    const report = await analyzeProject({
+      cwd: fixture,
+      similar: true,
+      minSimilarity: 0.7,
+    });
+
+    expect(report.groups).toHaveLength(0);
+    expect(report.similarGroups).toHaveLength(1);
+    expect(report.similarGroups?.[0]).toMatchObject({
+      id: "twpa-sim-001",
+      similarity: 0.714,
+      sharedTokens: ["rounded-md", "border", "p-4", "text-sm", "font-medium"],
+    });
+  });
 });
 
 async function createFixture(files: Record<string, string>): Promise<string> {

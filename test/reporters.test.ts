@@ -57,6 +57,57 @@ describe("formatReport", () => {
         ],
       },
     ],
+    similarGroups: [
+      {
+        id: "twpa-sim-001",
+        similarity: 0.714,
+        sharedTokens: ["rounded-md", "border", "p-4"],
+        candidates: [
+          {
+            normalized: "bg-white border p-4 rounded-md",
+            classCount: 4,
+            occurrenceCount: 1,
+            rawValues: [{ value: "rounded-md border bg-white p-4", count: 1 }],
+            occurrences: [
+              {
+                filePath: "src/CardA.tsx",
+                line: 2,
+                column: 12,
+                raw: "rounded-md border bg-white p-4",
+                normalized: "bg-white border p-4 rounded-md",
+                tokens: ["rounded-md", "border", "bg-white", "p-4"],
+                source: {
+                  extractor: "javascript",
+                  kind: "jsxAttribute",
+                  name: "className",
+                },
+              },
+            ],
+          },
+          {
+            normalized: "bg-card border p-4 rounded-md",
+            classCount: 4,
+            occurrenceCount: 1,
+            rawValues: [{ value: "rounded-md border bg-card p-4", count: 1 }],
+            occurrences: [
+              {
+                filePath: "src/CardB.tsx",
+                line: 2,
+                column: 12,
+                raw: "rounded-md border bg-card p-4",
+                normalized: "bg-card border p-4 rounded-md",
+                tokens: ["rounded-md", "border", "bg-card", "p-4"],
+                source: {
+                  extractor: "javascript",
+                  kind: "jsxAttribute",
+                  name: "className",
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   it("formats JSON with a stable schema version", () => {
@@ -74,6 +125,8 @@ describe("formatReport", () => {
     expect(markdown).toContain("### Component Candidates");
     expect(markdown).toContain("[`twpa-001`](#twpa-001)");
     expect(markdown).toContain("## Duplicate Groups");
+    expect(markdown).toContain("## Similar Groups");
+    expect(markdown).toContain("twpa-sim-001");
     expect(markdown).toContain("src/A.tsx:3:18");
     expect(markdown).toContain("twpa-001");
     expect(markdown).toContain("Recommendation: medium component");
@@ -83,6 +136,7 @@ describe("formatReport", () => {
     const terminal = formatReport(report, "terminal");
 
     expect(terminal).toContain("Duplicate groups: 1");
+    expect(terminal).toContain("Similar groups: 1");
     expect(terminal).toContain("twpa-001: 2 occurrences, 4 classes");
     expect(terminal).toContain("recommendation: medium component");
   });
@@ -92,6 +146,7 @@ describe("formatReport", () => {
 
     expect(pr).toContain("## Tailwind Pattern Audit");
     expect(pr).toContain("### Top Candidates");
+    expect(pr).toContain("### Similar Candidates");
     expect(pr).toContain("| `twpa-001` | medium | component | 2 | 4 |");
     expect(pr).not.toContain("src/A.tsx:3:18");
   });

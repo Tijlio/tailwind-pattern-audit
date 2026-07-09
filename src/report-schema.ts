@@ -24,6 +24,10 @@ export const AUDIT_REPORT_SCHEMA = {
       type: "array",
       items: { $ref: "#/$defs/duplicateClassGroup" },
     },
+    similarGroups: {
+      type: "array",
+      items: { $ref: "#/$defs/similarClassGroup" },
+    },
     diagnostics: {
       type: "array",
       items: { $ref: "#/$defs/diagnostic" },
@@ -57,6 +61,45 @@ export const AUDIT_REPORT_SCHEMA = {
         occurrences: {
           type: "array",
           minItems: 2,
+          items: { $ref: "#/$defs/classOccurrence" },
+        },
+      },
+    },
+    similarClassGroup: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "similarity", "sharedTokens", "candidates"],
+      properties: {
+        id: { type: "string", pattern: "^twpa-sim-[0-9]{3,}$" },
+        similarity: { type: "number", minimum: 0, maximum: 1 },
+        sharedTokens: {
+          type: "array",
+          items: { type: "string", minLength: 1 },
+        },
+        candidates: {
+          type: "array",
+          minItems: 2,
+          maxItems: 2,
+          items: { $ref: "#/$defs/similarClassCandidate" },
+        },
+      },
+    },
+    similarClassCandidate: {
+      type: "object",
+      additionalProperties: false,
+      required: ["normalized", "classCount", "occurrenceCount", "rawValues", "occurrences"],
+      properties: {
+        normalized: { type: "string", minLength: 1 },
+        classCount: { type: "integer", minimum: 1 },
+        occurrenceCount: { type: "integer", minimum: 1 },
+        rawValues: {
+          type: "array",
+          minItems: 1,
+          items: { $ref: "#/$defs/rawValue" },
+        },
+        occurrences: {
+          type: "array",
+          minItems: 1,
           items: { $ref: "#/$defs/classOccurrence" },
         },
       },

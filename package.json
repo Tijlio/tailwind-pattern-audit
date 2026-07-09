@@ -1,6 +1,6 @@
 {
   "name": "tailwind-pattern-audit",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Find repeated Tailwind class patterns in JavaScript and TypeScript projects.",
   "type": "module",
   "license": "MIT",

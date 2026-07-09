@@ -51,6 +51,17 @@ program
   .option("--priority <priority...>", "Only include recommendation priorities: high, medium, low.")
   .option("--kind <kind...>", "Only include recommendation kinds: component, utility, cva.")
   .option("--hide-layout-only", "Hide groups made only of layout primitives.")
+  .option("--similar", "Detect near-duplicate class sets.")
+  .option(
+    "--min-similarity <number>",
+    "Minimum Jaccard similarity for near-duplicate groups.",
+    parseSimilarity,
+  )
+  .option(
+    "--max-similar-groups <number>",
+    "Maximum near-duplicate groups to report.",
+    parseNonNegativeInteger,
+  )
   .option("--format <format>", "Output format: terminal, json, markdown, or pr.", "terminal")
   .option("--json", "Shortcut for --format json.")
   .option("--markdown", "Shortcut for --format markdown.")
@@ -85,6 +96,9 @@ program
       priority: options.priority,
       kind: options.kind,
       hideLayoutOnly: options.hideLayoutOnly,
+      similar: options.similar,
+      minSimilarity: options.minSimilarity,
+      maxSimilarGroups: options.maxSimilarGroups,
       configFile: resolveConfigFileOption(options),
       failOn: options.failOn,
       maxGroups: options.maxGroups,
@@ -136,6 +150,9 @@ interface CliOptions {
   priority?: RecommendationPriority[];
   kind?: RecommendationKind[];
   hideLayoutOnly?: boolean;
+  similar?: boolean;
+  minSimilarity?: number;
+  maxSimilarGroups?: number;
   format: string;
   json?: boolean;
   markdown?: boolean;
@@ -168,6 +185,16 @@ function parseNonNegativeInteger(value: string): number {
 
   if (!Number.isInteger(parsed) || parsed < 0) {
     throw new Error(`Expected a non-negative integer, received "${value}".`);
+  }
+
+  return parsed;
+}
+
+function parseSimilarity(value: string): number {
+  const parsed = Number.parseFloat(value);
+
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) {
+    throw new Error(`Expected a number greater than 0 and up to 1, received "${value}".`);
   }
 
   return parsed;
