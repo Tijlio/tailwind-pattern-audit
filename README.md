@@ -2,6 +2,8 @@
 
 Find repeated Tailwind class patterns in JavaScript and TypeScript projects.
 
+Requires Node.js 20 or newer.
+
 ```bash
 pnpm add -D tailwind-pattern-audit
 pnpm tailwind-pattern-audit --format markdown --output tailwind-audit.md
@@ -17,6 +19,7 @@ tailwind-pattern-audit
 tailwind-pattern-audit --json
 tailwind-pattern-audit --markdown
 tailwind-pattern-audit --min-occurrences 3
+tailwind-pattern-audit --min-classes 4
 tailwind-pattern-audit --include "src/**/*.{ts,tsx}"
 tailwind-pattern-audit --fail-on duplicates --max-groups 0
 ```
@@ -33,12 +36,13 @@ console.log(formatReport(report, "markdown"));
 ## GitHub Action
 
 ```yaml
-- uses: your-org/tailwind-pattern-audit@v0
+- uses: Tijlio/tailwind-pattern-audit@v0
   with:
     format: markdown
     output: tailwind-audit.md
     fail-on: duplicates
     max-groups: 0
+    node-version: 22
 ```
 
 ## Scope
@@ -56,7 +60,6 @@ Supported in this release:
 Deferred but planned:
 
 - Vue, Svelte, Astro, and HTML extractors
-- CI gating and GitHub Action support
 - similarity detection and CVA opportunity scoring
 - JSX subtree pattern detection
 - VS Code integration

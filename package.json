@@ -5,6 +5,14 @@
   "type": "module",
   "license": "MIT",
   "author": "Naum",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tijlio/tailwind-pattern-audit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tijlio/tailwind-pattern-audit/issues"
+  },
+  "homepage": "https://github.com/Tijlio/tailwind-pattern-audit#readme",
   "keywords": [
     "tailwind",
     "tailwindcss",
@@ -18,7 +26,7 @@
   "packageManager": "pnpm@10.33.0",
   "sideEffects": false,
   "bin": {
-    "tailwind-pattern-audit": "./dist/cli.js"
+    "tailwind-pattern-audit": "dist/cli.js"
   },
   "exports": {
     ".": {
@@ -34,7 +42,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "publishConfig": {
     "provenance": true

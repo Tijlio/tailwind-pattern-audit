@@ -39,6 +39,10 @@ inputs:
   max-occurrences:
     description: Fail when reported duplicate occurrence count exceeds this number.
     required: false
+  node-version:
+    description: Node.js version used to run the npm package.
+    required: false
+    default: "22"
   version:
     description: npm package version or dist tag to run.
     required: false
@@ -47,6 +51,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
     - name: Run audit
       shell: bash
       run: |
