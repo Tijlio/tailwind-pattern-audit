@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.10
+
+- Shared static string extraction between JavaScript and markup extractors.
+- Reduced reporter duplication with common summary, escaping, and pattern formatting helpers.
+- Refactored config option merging and similar-group pairing for lower maintenance risk.
+- Removed internal-only exports from the generated package surface.
+
 ## 0.1.9
 
 - Added `comment: true` support to the GitHub Action for posting or updating PR comments.

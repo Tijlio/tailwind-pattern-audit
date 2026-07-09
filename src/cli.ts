@@ -9,15 +9,16 @@ import { resolveOptions } from "./config.js";
 import { evaluateCiGate } from "./gate.js";
 import { initConfig } from "./init-config.js";
 import { formatReport } from "./reporters/index.js";
-import type {
-  FailOnCondition,
-  RecommendationKind,
-  RecommendationPriority,
-  ReportFormat,
-} from "./types.js";
+import type { AnalyzeProjectOptions, ReportFormat } from "./types.js";
 import { TOOL_VERSION } from "./version.js";
 
 const program = new Command();
+const FORMAT_SHORTCUTS = [
+  ["json", "json"],
+  ["markdown", "markdown"],
+  ["pr", "pr"],
+] as const;
+const REPORT_FORMATS = new Set<string>(["terminal", "json", "markdown", "pr"]);
 
 program
   .command("init")
@@ -144,29 +145,13 @@ program.parseAsync().catch((error: unknown) => {
   process.exitCode = 1;
 });
 
-interface CliOptions {
-  cwd?: string;
-  include?: string[];
-  exclude?: string[];
-  minOccurrences?: number;
-  minClasses?: number;
-  functions?: string[];
-  priority?: RecommendationPriority[];
-  kind?: RecommendationKind[];
-  hideLayoutOnly?: boolean;
-  similar?: boolean;
-  minSimilarity?: number;
-  maxSimilarGroups?: number;
-  baseline?: string;
+interface CliOptions extends Omit<AnalyzeProjectOptions, "configFile"> {
   format: string;
   json?: boolean;
   markdown?: boolean;
   pr?: boolean;
   output?: string;
   config?: string | boolean;
-  failOn?: FailOnCondition[];
-  maxGroups?: number;
-  maxOccurrences?: number;
   quiet?: boolean;
 }
 
@@ -206,30 +191,23 @@ function parseSimilarity(value: string): number {
 }
 
 function resolveFormat(options: CliOptions): ReportFormat {
-  if (options.json) {
-    return "json";
+  const shortcut = FORMAT_SHORTCUTS.find(([option]) => options[option]);
+
+  if (shortcut) {
+    return shortcut[1];
   }
 
-  if (options.markdown) {
-    return "markdown";
-  }
-
-  if (options.pr) {
-    return "pr";
-  }
-
-  if (
-    options.format === "terminal" ||
-    options.format === "json" ||
-    options.format === "markdown" ||
-    options.format === "pr"
-  ) {
+  if (isReportFormat(options.format)) {
     return options.format;
   }
 
   throw new Error(
     `Unsupported format "${options.format}". Expected terminal, json, markdown, or pr.`,
   );
+}
+
+function isReportFormat(format: string): format is ReportFormat {
+  return REPORT_FORMATS.has(format);
 }
 
 function resolveConfigFileOption(options: CliOptions): string | false | undefined {

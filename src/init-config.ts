@@ -4,7 +4,7 @@ import path from "node:path";
 import { DEFAULT_EXCLUDE, DEFAULT_FUNCTIONS } from "./config.js";
 import type { AnalyzeProjectOptions } from "./types.js";
 
-export const DEFAULT_INIT_CONFIG_FILE = "tailwind-pattern-audit.config.json";
+const DEFAULT_INIT_CONFIG_FILE = "tailwind-pattern-audit.config.json";
 
 export interface InitConfigOptions {
   cwd?: string;
@@ -15,7 +15,7 @@ export interface InitConfigResult {
   filePath: string;
 }
 
-export class ConfigInitError extends Error {
+class ConfigInitError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ConfigInitError";

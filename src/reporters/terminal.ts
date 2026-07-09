@@ -1,4 +1,10 @@
 import type { AuditReport, DuplicateClassGroup, SimilarClassGroup } from "../types.js";
+import {
+  formatDiagnosticsSummary,
+  getPrimaryPatternValue,
+  summarizeKinds,
+  summarizePriorities,
+} from "./shared.js";
 
 export function generateTerminal(report: AuditReport): string {
   const lines = [
@@ -41,44 +47,17 @@ export function generateTerminal(report: AuditReport): string {
   }
 
   if (report.diagnostics.length > 0) {
-    const warningCount = report.diagnostics.filter(
-      (diagnostic) => diagnostic.severity !== "info",
-    ).length;
-    lines.push("", `Diagnostics: ${report.diagnostics.length} (${warningCount} warnings/errors)`);
+    lines.push("", `Diagnostics: ${formatDiagnosticsSummary(report)}`);
   }
 
   return `${lines.join("\n").trimEnd()}\n`;
-}
-
-function summarizePriorities(report: AuditReport): string {
-  return [
-    `high ${countBy(report, "priority", "high")}`,
-    `medium ${countBy(report, "priority", "medium")}`,
-    `low ${countBy(report, "priority", "low")}`,
-  ].join(", ");
-}
-
-function summarizeKinds(report: AuditReport): string {
-  return [
-    `component ${countBy(report, "kind", "component")}`,
-    `utility ${countBy(report, "kind", "utility")}`,
-    `cva ${countBy(report, "kind", "cva")}`,
-  ].join(", ");
-}
-
-function countBy(
-  report: AuditReport,
-  property: "kind" | "priority",
-  value: DuplicateClassGroup["recommendation"]["kind" | "priority"],
-): number {
-  return report.groups.filter((group) => group.recommendation[property] === value).length;
 }
 
 function formatGroup(group: DuplicateClassGroup): string[] {
   const lines = [
     `${group.id}: ${group.occurrenceCount} occurrences, ${group.classCount} classes`,
     `  recommendation: ${group.recommendation.priority} ${group.recommendation.kind}`,
-    `  ${group.rawValues[0]?.value ?? group.normalized}`,
+    `  ${getPrimaryPatternValue(group)}`,
   ];
 
   for (const occurrence of group.occurrences.slice(0, 5)) {
@@ -103,7 +82,7 @@ function formatSimilarGroup(group: SimilarClassGroup): string[] {
 
   return [
     `${group.id}: ${Math.round(group.similarity * 100)}% similar, ${group.sharedTokens.length} shared classes`,
-    `  ${first.rawValues[0]?.value ?? first.normalized}`,
-    `  ~ ${second.rawValues[0]?.value ?? second.normalized}`,
+    `  ${getPrimaryPatternValue(first)}`,
+    `  ~ ${getPrimaryPatternValue(second)}`,
   ];
 }

@@ -1,22 +1,14 @@
-import path from "node:path";
-
 import { parse } from "@babel/parser";
 import traverseModule from "@babel/traverse";
 import type { NodePath, TraverseOptions } from "@babel/traverse";
 import { isExpression } from "@babel/types";
 import type {
-  ArrayExpression,
   CallExpression,
-  ConditionalExpression,
   Expression,
   JSXAttribute,
   JSXExpressionContainer,
   Node,
   ObjectExpression,
-  TemplateLiteral,
-  TSAsExpression,
-  TSSatisfiesExpression,
-  TSTypeAssertion,
 } from "@babel/types";
 
 import { normalizeClassValue } from "../normalize.js";
@@ -27,6 +19,11 @@ import type {
   Extractor,
   ExtractResult,
 } from "../types.js";
+import {
+  extractStaticStringValues,
+  unwrapExpression,
+  type StaticStringValue,
+} from "./static-expressions.js";
 
 type TraverseFn = (parent: Node, opts: TraverseOptions) => void;
 
@@ -41,12 +38,9 @@ export const javascriptExtractor: Extractor = {
   },
 };
 
-interface StaticValue {
-  raw: string;
-  node: Node;
-}
+type StaticValue = StaticStringValue;
 
-interface HelperCandidate extends StaticValue {
+interface HelperCandidate extends StaticStringValue {
   name: string;
 }
 
@@ -204,7 +198,7 @@ function extractDirectStaticValues(
     return undefined;
   }
 
-  const values = extractStaticValues(expression);
+  const values = extractStaticStringValues(expression);
 
   return values.length > 0 ? values : undefined;
 }
@@ -254,7 +248,7 @@ function extractCvaCandidates(call: CallExpression): HelperCandidate[] {
   const optionsArgument = getExpressionArgument(call.arguments[1]);
 
   if (baseArgument) {
-    const base = combineStaticValues(extractStaticValues(baseArgument), baseArgument);
+    const base = combineStaticValues(extractStaticStringValues(baseArgument), baseArgument);
 
     if (base) {
       candidates.push({ ...base, name: "cva:base" });
@@ -297,7 +291,7 @@ function extractCvaVariantCandidates(options: ObjectExpression): HelperCandidate
       }
 
       const value = combineStaticValues(
-        extractStaticValues(variantOption.value),
+        extractStaticStringValues(variantOption.value),
         variantOption.value,
       );
 
@@ -326,7 +320,9 @@ function extractCvaCompoundVariantCandidates(options: ObjectExpression): HelperC
 
     return ["class", "className"].flatMap<HelperCandidate>((propertyName): HelperCandidate[] => {
       const value = getObjectPropertyExpression(compoundVariant, propertyName);
-      const combined = value ? combineStaticValues(extractStaticValues(value), value) : undefined;
+      const combined = value
+        ? combineStaticValues(extractStaticStringValues(value), value)
+        : undefined;
 
       return combined ? [{ ...combined, name: "cva:compoundVariant" }] : [];
     });
@@ -341,88 +337,8 @@ function extractStaticValuesFromExpressionList(values: CallExpression["arguments
       return [];
     }
 
-    return extractStaticValues(expression);
+    return extractStaticStringValues(expression);
   });
-}
-
-function extractStaticValues(expression: Expression): StaticValue[] {
-  const unwrapped = unwrapExpression(expression);
-  const direct = extractStaticValue(unwrapped);
-
-  if (direct) {
-    return [direct];
-  }
-
-  if (unwrapped.type === "ArrayExpression") {
-    return extractStaticValuesFromArray(unwrapped);
-  }
-
-  if (unwrapped.type === "ObjectExpression") {
-    return extractStaticValuesFromObject(unwrapped);
-  }
-
-  if (unwrapped.type === "LogicalExpression" && !isDefinitelyFalse(unwrapped.left)) {
-    return extractStaticValues(unwrapped.right);
-  }
-
-  if (unwrapped.type === "ConditionalExpression") {
-    return extractStaticValuesFromConditional(unwrapped);
-  }
-
-  return [];
-}
-
-function extractStaticValuesFromArray(expression: ArrayExpression): StaticValue[] {
-  return expression.elements.flatMap((element) => {
-    if (!element || element.type === "SpreadElement") {
-      return [];
-    }
-
-    return extractStaticValues(element);
-  });
-}
-
-function extractStaticValuesFromObject(expression: ObjectExpression): StaticValue[] {
-  return expression.properties.flatMap<StaticValue>((property): StaticValue[] => {
-    if (property.type === "ObjectMethod" || property.type === "SpreadElement") {
-      return [];
-    }
-
-    if (!isExpression(property.value) || isDefinitelyFalse(property.value)) {
-      return [];
-    }
-
-    if (property.key.type === "StringLiteral") {
-      return [{ raw: property.key.value, node: property.key }];
-    }
-
-    if (property.key.type === "Identifier") {
-      return [{ raw: property.key.name, node: property.key }];
-    }
-
-    return [];
-  });
-}
-
-function extractStaticValuesFromConditional(expression: ConditionalExpression): StaticValue[] {
-  return [
-    ...extractStaticValues(expression.consequent),
-    ...extractStaticValues(expression.alternate),
-  ];
-}
-
-function extractStaticValue(expression: Expression): StaticValue | undefined {
-  const unwrapped = unwrapExpression(expression);
-
-  if (unwrapped.type === "StringLiteral") {
-    return { raw: unwrapped.value, node: unwrapped };
-  }
-
-  if (unwrapped.type === "TemplateLiteral" && unwrapped.expressions.length === 0) {
-    return { raw: templateLiteralToString(unwrapped), node: unwrapped };
-  }
-
-  return undefined;
 }
 
 function combineStaticValues(values: StaticValue[], node: Node): StaticValue | undefined {
@@ -434,24 +350,6 @@ function combineStaticValues(values: StaticValue[], node: Node): StaticValue | u
     raw: values.map((value) => value.raw).join(" "),
     node: values[0]?.node ?? node,
   };
-}
-
-function unwrapExpression(expression: Expression): Expression {
-  let current = expression;
-
-  while (
-    current.type === "TSAsExpression" ||
-    current.type === "TSSatisfiesExpression" ||
-    current.type === "TSTypeAssertion"
-  ) {
-    current = (current as TSAsExpression | TSSatisfiesExpression | TSTypeAssertion).expression;
-  }
-
-  return current;
-}
-
-function templateLiteralToString(node: TemplateLiteral): string {
-  return node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join("");
 }
 
 function getExpressionArgument(
@@ -492,14 +390,6 @@ function isObjectPropertyKey(
   }
 
   return property.key.type === "StringLiteral" && property.key.value === name;
-}
-
-function isDefinitelyFalse(expression: Expression): boolean {
-  const unwrapped = unwrapExpression(expression);
-
-  return (
-    (unwrapped.type === "BooleanLiteral" && !unwrapped.value) || unwrapped.type === "NullLiteral"
-  );
 }
 
 function getCalleeName(call: CallExpression): string | undefined {
@@ -551,8 +441,4 @@ function getLocation(node: Node): { line?: number; column?: number } {
     line: node.loc?.start.line,
     column: node.loc ? node.loc.start.column + 1 : undefined,
   };
-}
-
-export function canExtractJavaScript(filePath: string): boolean {
-  return javascriptExtractor.extensions.includes(path.extname(filePath));
 }

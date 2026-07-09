@@ -1,4 +1,13 @@
 import type { AuditReport, DuplicateClassGroup, SimilarClassGroup } from "../types.js";
+import {
+  escapeInlineCode,
+  escapeMarkdownTable,
+  formatInlineCodeForTable,
+  formatTopFiles,
+  getPrimaryPatternValue,
+  summarizeKinds,
+  summarizePriorities,
+} from "./shared.js";
 
 const TOP_CANDIDATE_LIMIT = 5;
 
@@ -17,68 +26,59 @@ export function generateMarkdown(report: AuditReport): string {
     "",
   ];
 
-  if (report.groups.length === 0) {
-    lines.push("No duplicate Tailwind class patterns found.", "");
-  } else {
-    lines.push(...formatTopCandidates(report), "", "## Duplicate Groups", "");
-
-    for (const group of report.groups) {
-      lines.push(...formatGroup(group), "");
-    }
-  }
-
-  if (report.similarGroups && report.similarGroups.length > 0) {
-    lines.push("## Similar Groups", "");
-
-    for (const group of report.similarGroups) {
-      lines.push(...formatSimilarGroup(group), "");
-    }
-  }
-
-  if (report.diagnostics.length > 0) {
-    lines.push("## Diagnostics", "");
-    lines.push("| Severity | Code | Location | Message |");
-    lines.push("| --- | --- | --- | --- |");
-
-    for (const diagnostic of report.diagnostics) {
-      const location = diagnostic.filePath
-        ? `${diagnostic.filePath}${diagnostic.line ? `:${diagnostic.line}:${diagnostic.column ?? 1}` : ""}`
-        : "";
-      lines.push(
-        `| ${diagnostic.severity} | \`${diagnostic.code}\` | ${location} | ${escapeMarkdownTable(
-          diagnostic.message,
-        )} |`,
-      );
-    }
-
-    lines.push("");
-  }
+  appendDuplicateSections(lines, report);
+  appendSimilarSections(lines, report);
+  appendDiagnosticsSection(lines, report);
 
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-function summarizePriorities(report: AuditReport): string {
-  return [
-    `high ${countBy(report, "priority", "high")}`,
-    `medium ${countBy(report, "priority", "medium")}`,
-    `low ${countBy(report, "priority", "low")}`,
-  ].join(", ");
+function appendDuplicateSections(lines: string[], report: AuditReport): void {
+  if (report.groups.length === 0) {
+    lines.push("No duplicate Tailwind class patterns found.", "");
+    return;
+  }
+
+  lines.push(...formatTopCandidates(report), "", "## Duplicate Groups", "");
+
+  for (const group of report.groups) {
+    lines.push(...formatGroup(group), "");
+  }
 }
 
-function summarizeKinds(report: AuditReport): string {
-  return [
-    `component ${countBy(report, "kind", "component")}`,
-    `utility ${countBy(report, "kind", "utility")}`,
-    `cva ${countBy(report, "kind", "cva")}`,
-  ].join(", ");
+function appendSimilarSections(lines: string[], report: AuditReport): void {
+  if (!report.similarGroups || report.similarGroups.length === 0) {
+    return;
+  }
+
+  lines.push("## Similar Groups", "");
+
+  for (const group of report.similarGroups) {
+    lines.push(...formatSimilarGroup(group), "");
+  }
 }
 
-function countBy(
-  report: AuditReport,
-  property: "kind" | "priority",
-  value: DuplicateClassGroup["recommendation"]["kind" | "priority"],
-): number {
-  return report.groups.filter((group) => group.recommendation[property] === value).length;
+function appendDiagnosticsSection(lines: string[], report: AuditReport): void {
+  if (report.diagnostics.length === 0) {
+    return;
+  }
+
+  lines.push("## Diagnostics", "");
+  lines.push("| Severity | Code | Location | Message |");
+  lines.push("| --- | --- | --- | --- |");
+
+  for (const diagnostic of report.diagnostics) {
+    const location = diagnostic.filePath
+      ? `${diagnostic.filePath}${diagnostic.line ? `:${diagnostic.line}:${diagnostic.column ?? 1}` : ""}`
+      : "";
+    lines.push(
+      `| ${diagnostic.severity} | \`${diagnostic.code}\` | ${location} | ${escapeMarkdownTable(
+        diagnostic.message,
+      )} |`,
+    );
+  }
+
+  lines.push("");
 }
 
 function formatTopCandidates(report: AuditReport): string[] {
@@ -119,15 +119,8 @@ function formatTopCandidateRow(group: DuplicateClassGroup): string {
     String(group.occurrenceCount),
     String(group.classCount),
     formatTopFiles(group),
-    formatInlineCodeForTable(group.rawValues[0]?.value ?? group.normalized),
+    formatInlineCodeForTable(getPrimaryPatternValue(group)),
   ].join(" | ")} |`;
-}
-
-function formatTopFiles(group: DuplicateClassGroup): string {
-  return group.recommendation.topFiles
-    .map((topFile) => `${topFile.filePath} (${topFile.count})`)
-    .map(escapeMarkdownTable)
-    .join("<br>");
 }
 
 function formatGroup(group: DuplicateClassGroup): string[] {
@@ -140,7 +133,7 @@ function formatGroup(group: DuplicateClassGroup): string[] {
     `- Reason: ${group.recommendation.reason}`,
     "",
     "```text",
-    group.rawValues[0]?.value ?? group.normalized,
+    getPrimaryPatternValue(group),
     "```",
     "",
     "| File | Source | Raw variant |",
@@ -197,18 +190,6 @@ function formatSimilarCandidateRow(candidate: SimilarClassGroup["candidates"][nu
     candidate.occurrences[0]?.filePath ?? "",
     String(candidate.occurrenceCount),
     String(candidate.classCount),
-    formatInlineCodeForTable(candidate.rawValues[0]?.value ?? candidate.normalized),
+    formatInlineCodeForTable(getPrimaryPatternValue(candidate)),
   ].join(" | ")} |`;
-}
-
-function escapeMarkdownTable(value: string): string {
-  return value.replaceAll("|", "\\|").replaceAll("\n", " ");
-}
-
-function escapeInlineCode(value: string): string {
-  return value.replaceAll("`", "\\`").replaceAll("\n", " ");
-}
-
-function formatInlineCodeForTable(value: string): string {
-  return `\`${escapeMarkdownTable(escapeInlineCode(value))}\``;
 }

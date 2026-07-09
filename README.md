@@ -55,7 +55,7 @@ permissions:
   contents: read
   pull-requests: write
 
-- uses: Tijlio/tailwind-pattern-audit@v0.1.9
+- uses: Tijlio/tailwind-pattern-audit@v0.1.10
   with:
     format: pr
     comment: true

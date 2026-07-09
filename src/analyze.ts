@@ -120,19 +120,7 @@ function buildDuplicateGroups(
   options: ResolvedAnalyzeOptions,
   baselineGroups?: Set<string>,
 ): DuplicateClassGroup[] {
-  const grouped = new Map<string, ClassOccurrence[]>();
-
-  for (const occurrence of occurrences) {
-    if (occurrence.tokens.length < options.minClasses) {
-      continue;
-    }
-
-    const current = grouped.get(occurrence.normalized) ?? [];
-    current.push(occurrence);
-    grouped.set(occurrence.normalized, current);
-  }
-
-  return [...grouped.entries()]
+  return groupOccurrencesByNormalized(occurrences, options.minClasses)
     .filter(([, groupOccurrences]) => groupOccurrences.length >= options.minOccurrences)
     .map(([normalized, groupOccurrences]) => ({
       normalized,
@@ -195,7 +183,6 @@ function buildSimilarGroups(
   const candidates = buildSimilarityCandidates(occurrences, options);
   const tokenIndex = buildSimilarityTokenIndex(candidates);
   const pairs: SimilarityPair[] = [];
-  const seenPairs = new Set<string>();
 
   for (let index = 0; index < candidates.length; index += 1) {
     const candidate = candidates[index];
@@ -204,42 +191,18 @@ function buildSimilarGroups(
       continue;
     }
 
-    const relatedIndexes = new Set<number>();
-
-    for (const token of candidate.tokens) {
-      for (const relatedIndex of tokenIndex.get(token) ?? []) {
-        if (relatedIndex > index) {
-          relatedIndexes.add(relatedIndex);
-        }
-      }
-    }
-
-    for (const relatedIndex of relatedIndexes) {
+    for (const relatedIndex of getRelatedCandidateIndexes(candidate, tokenIndex, index)) {
       const relatedCandidate = candidates[relatedIndex];
 
       if (!relatedCandidate) {
         continue;
       }
 
-      const pairKey = `${index}:${relatedIndex}`;
+      const pair = buildSimilarityPair(candidate, relatedCandidate, options.minSimilarity);
 
-      if (seenPairs.has(pairKey)) {
-        continue;
+      if (pair) {
+        pairs.push(pair);
       }
-
-      seenPairs.add(pairKey);
-
-      const similarity = calculateJaccardSimilarity(candidate.tokenSet, relatedCandidate.tokenSet);
-
-      if (similarity < options.minSimilarity) {
-        continue;
-      }
-
-      pairs.push({
-        similarity,
-        sharedTokens: getSharedTokens(candidate, relatedCandidate),
-        candidates: [toSimilarityCandidate(candidate), toSimilarityCandidate(relatedCandidate)],
-      });
     }
   }
 
@@ -254,23 +217,47 @@ function buildSimilarGroups(
     }));
 }
 
+function getRelatedCandidateIndexes(
+  candidate: SimilarityCandidate,
+  tokenIndex: Map<string, Set<number>>,
+  currentIndex: number,
+): number[] {
+  const relatedIndexes = new Set<number>();
+
+  for (const token of candidate.tokens) {
+    for (const relatedIndex of tokenIndex.get(token) ?? []) {
+      if (relatedIndex > currentIndex) {
+        relatedIndexes.add(relatedIndex);
+      }
+    }
+  }
+
+  return [...relatedIndexes];
+}
+
+function buildSimilarityPair(
+  candidate: SimilarityCandidate,
+  relatedCandidate: SimilarityCandidate,
+  minSimilarity: number,
+): SimilarityPair | undefined {
+  const similarity = calculateJaccardSimilarity(candidate.tokenSet, relatedCandidate.tokenSet);
+
+  if (similarity < minSimilarity) {
+    return undefined;
+  }
+
+  return {
+    similarity,
+    sharedTokens: getSharedTokens(candidate, relatedCandidate),
+    candidates: [toSimilarityCandidate(candidate), toSimilarityCandidate(relatedCandidate)],
+  };
+}
+
 function buildSimilarityCandidates(
   occurrences: ClassOccurrence[],
   options: ResolvedAnalyzeOptions,
 ): SimilarityCandidate[] {
-  const grouped = new Map<string, ClassOccurrence[]>();
-
-  for (const occurrence of occurrences) {
-    if (occurrence.tokens.length < options.minClasses) {
-      continue;
-    }
-
-    const current = grouped.get(occurrence.normalized) ?? [];
-    current.push(occurrence);
-    grouped.set(occurrence.normalized, current);
-  }
-
-  return [...grouped.entries()]
+  return groupOccurrencesByNormalized(occurrences, options.minClasses)
     .map(([normalized, groupOccurrences]) => {
       const sortedOccurrences = groupOccurrences.sort(compareOccurrences);
       const tokens = sortedOccurrences[0]?.tokens ?? [];
@@ -288,6 +275,25 @@ function buildSimilarityCandidates(
     .filter((candidate) => !options.hideLayoutOnly || !isLayoutOnlyCandidate(candidate))
     .sort(compareSimilarityCandidates)
     .slice(0, SIMILARITY_CANDIDATE_LIMIT);
+}
+
+function groupOccurrencesByNormalized(
+  occurrences: ClassOccurrence[],
+  minClasses: number,
+): Array<[string, ClassOccurrence[]]> {
+  const grouped = new Map<string, ClassOccurrence[]>();
+
+  for (const occurrence of occurrences) {
+    if (occurrence.tokens.length < minClasses) {
+      continue;
+    }
+
+    const current = grouped.get(occurrence.normalized) ?? [];
+    current.push(occurrence);
+    grouped.set(occurrence.normalized, current);
+  }
+
+  return [...grouped.entries()];
 }
 
 function buildSimilarityTokenIndex(candidates: SimilarityCandidate[]): Map<string, Set<number>> {

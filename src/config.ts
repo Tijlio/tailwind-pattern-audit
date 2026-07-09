@@ -11,7 +11,7 @@ import type {
   ResolvedAnalyzeOptions,
 } from "./types.js";
 
-export const DEFAULT_INCLUDE = ["**/*.{js,jsx,ts,tsx,html,astro,vue,svelte}"];
+const DEFAULT_INCLUDE = ["**/*.{js,jsx,ts,tsx,html,astro,vue,svelte}"];
 
 export const DEFAULT_EXCLUDE = [
   "**/node_modules/**",
@@ -24,6 +24,24 @@ export const DEFAULT_EXCLUDE = [
 ];
 
 export const DEFAULT_FUNCTIONS = ["cn", "clsx", "classnames", "cva", "twMerge"];
+
+const DEFAULT_RESOLVED_OPTIONS: Omit<
+  ResolvedAnalyzeOptions,
+  "cwd" | "configFile" | "baseline" | "maxGroups" | "maxOccurrences"
+> = {
+  include: DEFAULT_INCLUDE,
+  exclude: DEFAULT_EXCLUDE,
+  minOccurrences: 2,
+  minClasses: 3,
+  functions: DEFAULT_FUNCTIONS,
+  priority: [],
+  kind: [],
+  hideLayoutOnly: false,
+  similar: false,
+  minSimilarity: 0.75,
+  maxSimilarGroups: 20,
+  failOn: [],
+};
 
 const CONFIG_FILES = [
   "tailwind-pattern-audit.config.mjs",
@@ -60,7 +78,7 @@ const FAIL_ON_CONDITIONS = new Set<FailOnCondition>([
 const RECOMMENDATION_PRIORITIES = new Set<RecommendationPriority>(["high", "medium", "low"]);
 const RECOMMENDATION_KINDS = new Set<RecommendationKind>(["component", "cva", "utility"]);
 
-export class ConfigValidationError extends Error {
+class ConfigValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ConfigValidationError";
@@ -72,41 +90,37 @@ export async function resolveOptions(
 ): Promise<ResolvedAnalyzeOptions> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const config = await loadConfig(cwd, options.configFile);
-  const include = options.include ?? config.include ?? DEFAULT_INCLUDE;
-  const exclude = options.exclude ?? config.exclude ?? DEFAULT_EXCLUDE;
-  const minOccurrences = options.minOccurrences ?? config.minOccurrences ?? 2;
-  const minClasses = options.minClasses ?? config.minClasses ?? 3;
-  const functions = options.functions ?? config.functions ?? DEFAULT_FUNCTIONS;
-  const priority = options.priority ?? config.priority ?? [];
-  const kind = options.kind ?? config.kind ?? [];
-  const hideLayoutOnly = options.hideLayoutOnly ?? config.hideLayoutOnly ?? false;
-  const similar = options.similar ?? config.similar ?? false;
-  const minSimilarity = options.minSimilarity ?? config.minSimilarity ?? 0.75;
-  const maxSimilarGroups = options.maxSimilarGroups ?? config.maxSimilarGroups ?? 20;
-  const baseline = options.baseline ?? config.baseline;
-  const failOn = options.failOn ?? config.failOn ?? [];
-  const maxGroups = options.maxGroups ?? config.maxGroups;
-  const maxOccurrences = options.maxOccurrences ?? config.maxOccurrences;
+  const mergedOptions = {
+    ...DEFAULT_RESOLVED_OPTIONS,
+    ...withoutUndefinedProperties(config),
+    ...withoutUndefinedProperties(options),
+  } as typeof DEFAULT_RESOLVED_OPTIONS & ConfigShape;
 
   return validateResolvedOptions({
     cwd,
-    include,
-    exclude,
-    minOccurrences,
-    minClasses,
-    functions,
-    priority,
-    kind,
-    hideLayoutOnly,
-    similar,
-    minSimilarity,
-    maxSimilarGroups,
-    baseline,
+    include: mergedOptions.include,
+    exclude: mergedOptions.exclude,
+    minOccurrences: mergedOptions.minOccurrences,
+    minClasses: mergedOptions.minClasses,
+    functions: mergedOptions.functions,
+    priority: mergedOptions.priority,
+    kind: mergedOptions.kind,
+    hideLayoutOnly: mergedOptions.hideLayoutOnly,
+    similar: mergedOptions.similar,
+    minSimilarity: mergedOptions.minSimilarity,
+    maxSimilarGroups: mergedOptions.maxSimilarGroups,
+    baseline: mergedOptions.baseline,
     configFile: options.configFile,
-    failOn,
-    maxGroups,
-    maxOccurrences,
+    failOn: mergedOptions.failOn,
+    maxGroups: mergedOptions.maxGroups,
+    maxOccurrences: mergedOptions.maxOccurrences,
   });
+}
+
+function withoutUndefinedProperties<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, propertyValue]) => propertyValue !== undefined),
+  ) as Partial<T>;
 }
 
 async function loadConfig(
@@ -129,30 +143,36 @@ async function loadConfig(
     throw new ConfigValidationError(`Config file not found: ${discoveredConfig}`);
   }
 
+  const config = await readConfigFile(discoveredConfig);
+
+  return validateConfigShape(config, discoveredConfig);
+}
+
+async function readConfigFile(configPath: string): Promise<unknown> {
   let config: unknown;
 
-  if (discoveredConfig.endsWith(".json")) {
+  if (configPath.endsWith(".json")) {
     try {
-      config = JSON.parse(await readFile(discoveredConfig, "utf8")) as unknown;
+      config = JSON.parse(await readFile(configPath, "utf8")) as unknown;
     } catch (error) {
       throw new ConfigValidationError(
-        `Unable to parse config file ${discoveredConfig}: ${formatError(error)}`,
+        `Unable to parse config file ${configPath}: ${formatError(error)}`,
       );
     }
   } else {
     try {
-      const moduleUrl = pathToFileURL(discoveredConfig);
+      const moduleUrl = pathToFileURL(configPath);
       moduleUrl.searchParams.set("t", String(Date.now()));
       const module = (await import(moduleUrl.href)) as { default?: unknown };
       config = module.default ?? module;
     } catch (error) {
       throw new ConfigValidationError(
-        `Unable to load config file ${discoveredConfig}: ${formatError(error)}`,
+        `Unable to load config file ${configPath}: ${formatError(error)}`,
       );
     }
   }
 
-  return validateConfigShape(config, discoveredConfig);
+  return config;
 }
 
 function validateConfigShape(config: unknown, source: string): ConfigShape {

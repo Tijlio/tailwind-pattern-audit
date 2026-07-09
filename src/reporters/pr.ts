@@ -1,4 +1,12 @@
 import type { AuditReport, DuplicateClassGroup, SimilarClassGroup } from "../types.js";
+import {
+  formatDiagnosticsSummary,
+  formatInlineCodeForTable,
+  formatTopFiles,
+  getPrimaryPatternValue,
+  summarizeKinds,
+  summarizePriorities,
+} from "./shared.js";
 
 const PR_CANDIDATE_LIMIT = 10;
 const PR_SIMILAR_LIMIT = 5;
@@ -16,10 +24,7 @@ export function generatePr(report: AuditReport): string {
   ];
 
   if (report.diagnostics.length > 0) {
-    const warningCount = report.diagnostics.filter(
-      (diagnostic) => diagnostic.severity !== "info",
-    ).length;
-    lines.push(`- Diagnostics: ${report.diagnostics.length} (${warningCount} warnings/errors)`);
+    lines.push(`- Diagnostics: ${formatDiagnosticsSummary(report)}`);
   }
 
   lines.push("");
@@ -60,30 +65,6 @@ export function generatePr(report: AuditReport): string {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-function summarizePriorities(report: AuditReport): string {
-  return [
-    `high ${countBy(report, "priority", "high")}`,
-    `medium ${countBy(report, "priority", "medium")}`,
-    `low ${countBy(report, "priority", "low")}`,
-  ].join(", ");
-}
-
-function summarizeKinds(report: AuditReport): string {
-  return [
-    `component ${countBy(report, "kind", "component")}`,
-    `utility ${countBy(report, "kind", "utility")}`,
-    `cva ${countBy(report, "kind", "cva")}`,
-  ].join(", ");
-}
-
-function countBy(
-  report: AuditReport,
-  property: "kind" | "priority",
-  value: DuplicateClassGroup["recommendation"]["kind" | "priority"],
-): number {
-  return report.groups.filter((group) => group.recommendation[property] === value).length;
-}
-
 function formatCandidateRow(group: DuplicateClassGroup): string {
   return `| ${[
     `\`${group.id}\``,
@@ -91,7 +72,7 @@ function formatCandidateRow(group: DuplicateClassGroup): string {
     group.recommendation.kind,
     String(group.occurrenceCount),
     String(group.classCount),
-    formatInlineCodeForTable(group.rawValues[0]?.value ?? group.normalized),
+    formatInlineCodeForTable(getPrimaryPatternValue(group)),
     formatTopFiles(group),
   ].join(" | ")} |`;
 }
@@ -107,27 +88,8 @@ function formatSimilarRow(group: SimilarClassGroup): string {
     `\`${group.id}\``,
     `${Math.round(group.similarity * 100)}%`,
     String(group.sharedTokens.length),
-    `${formatInlineCodeForTable(first.rawValues[0]?.value ?? first.normalized)}<br>${formatInlineCodeForTable(
-      second.rawValues[0]?.value ?? second.normalized,
+    `${formatInlineCodeForTable(getPrimaryPatternValue(first))}<br>${formatInlineCodeForTable(
+      getPrimaryPatternValue(second),
     )}`,
   ].join(" | ")} |`;
-}
-
-function formatTopFiles(group: DuplicateClassGroup): string {
-  return group.recommendation.topFiles
-    .map((topFile) => `${topFile.filePath} (${topFile.count})`)
-    .map(escapeMarkdownTable)
-    .join("<br>");
-}
-
-function escapeMarkdownTable(value: string): string {
-  return value.replaceAll("|", "\\|").replaceAll("\n", " ");
-}
-
-function escapeInlineCode(value: string): string {
-  return value.replaceAll("`", "\\`").replaceAll("\n", " ");
-}
-
-function formatInlineCodeForTable(value: string): string {
-  return `\`${escapeMarkdownTable(escapeInlineCode(value))}\``;
 }

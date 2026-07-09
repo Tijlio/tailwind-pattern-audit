@@ -1,21 +1,11 @@
 import path from "node:path";
 
 import { parseExpression } from "@babel/parser";
-import { isExpression } from "@babel/types";
-import type {
-  ArrayExpression,
-  ConditionalExpression,
-  Expression,
-  ObjectExpression,
-  TemplateLiteral,
-  TSAsExpression,
-  TSSatisfiesExpression,
-  TSTypeAssertion,
-} from "@babel/types";
 import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 
 import { normalizeClassValue } from "../normalize.js";
 import type { ClassOccurrence, Diagnostic, ExtractInput, Extractor } from "../types.js";
+import { extractStaticStringValues } from "./static-expressions.js";
 
 export const htmlExtractor: Extractor = {
   id: "html",
@@ -31,6 +21,12 @@ type ElementNode = DefaultTreeAdapterTypes.Element;
 interface LocationLike {
   startLine: number;
   startCol: number;
+}
+
+interface BraceReaderState {
+  depth: number;
+  escaped: boolean;
+  quote?: string;
 }
 
 function extractHtml(input: ExtractInput): {
@@ -250,9 +246,10 @@ function readBalancedBraces(
   source: string,
   offset: number,
 ): { value: string; endOffset: number } | undefined {
-  let depth = 0;
-  let quote: string | undefined;
-  let escaped = false;
+  const state: BraceReaderState = {
+    depth: 0,
+    escaped: false,
+  };
 
   for (let index = offset; index < source.length; index += 1) {
     const character = source[index];
@@ -261,25 +258,16 @@ function readBalancedBraces(
       break;
     }
 
-    if (quote) {
-      if (escaped) {
-        escaped = false;
-      } else if (character === "\\") {
-        escaped = true;
-      } else if (character === quote) {
-        quote = undefined;
-      }
-
+    if (advanceQuotedState(state, character)) {
       continue;
     }
 
-    if (character === `"` || character === "'" || character === "`") {
-      quote = character;
+    if (enterQuote(state, character)) {
       continue;
     }
 
     if (character === "{") {
-      depth += 1;
+      state.depth += 1;
       continue;
     }
 
@@ -287,9 +275,9 @@ function readBalancedBraces(
       continue;
     }
 
-    depth -= 1;
+    state.depth -= 1;
 
-    if (depth === 0) {
+    if (state.depth === 0) {
       return {
         value: source.slice(offset, index + 1),
         endOffset: index + 1,
@@ -298,6 +286,35 @@ function readBalancedBraces(
   }
 
   return undefined;
+}
+
+function advanceQuotedState(state: BraceReaderState, character: string): boolean {
+  if (!state.quote) {
+    return false;
+  }
+
+  if (state.escaped) {
+    state.escaped = false;
+  } else if (character === "\\") {
+    state.escaped = true;
+  } else if (character === state.quote) {
+    state.quote = undefined;
+  }
+
+  return true;
+}
+
+function enterQuote(state: BraceReaderState, character: string): boolean {
+  if (!isQuote(character)) {
+    return false;
+  }
+
+  state.quote = character;
+  return true;
+}
+
+function isQuote(character: string): boolean {
+  return character === `"` || character === "'" || character === "`";
 }
 
 function extractClassListRawValue(value: string): string | undefined {
@@ -319,107 +336,12 @@ function extractClassListRawValue(value: string): string | undefined {
     const expression = parseExpression(trimmed.slice(1, -1), {
       plugins: ["typescript", "jsx"],
     });
-    const staticValues = extractStaticValues(expression);
+    const staticValues = extractStaticStringValues(expression).map((value) => value.raw);
 
     return staticValues.length > 0 ? staticValues.join(" ") : undefined;
   } catch {
     return undefined;
   }
-}
-
-function extractStaticValues(expression: Expression): string[] {
-  const unwrapped = unwrapExpression(expression);
-
-  if (unwrapped.type === "StringLiteral") {
-    return [unwrapped.value];
-  }
-
-  if (unwrapped.type === "TemplateLiteral" && unwrapped.expressions.length === 0) {
-    return [templateLiteralToString(unwrapped)];
-  }
-
-  if (unwrapped.type === "ArrayExpression") {
-    return extractStaticValuesFromArray(unwrapped);
-  }
-
-  if (unwrapped.type === "ObjectExpression") {
-    return extractStaticValuesFromObject(unwrapped);
-  }
-
-  if (unwrapped.type === "LogicalExpression" && !isDefinitelyFalse(unwrapped.left)) {
-    return extractStaticValues(unwrapped.right);
-  }
-
-  if (unwrapped.type === "ConditionalExpression") {
-    return extractStaticValuesFromConditional(unwrapped);
-  }
-
-  return [];
-}
-
-function extractStaticValuesFromArray(expression: ArrayExpression): string[] {
-  return expression.elements.flatMap((element) => {
-    if (!element || element.type === "SpreadElement") {
-      return [];
-    }
-
-    return extractStaticValues(element);
-  });
-}
-
-function extractStaticValuesFromObject(expression: ObjectExpression): string[] {
-  return expression.properties.flatMap<string>((property): string[] => {
-    if (property.type === "ObjectMethod" || property.type === "SpreadElement") {
-      return [];
-    }
-
-    if (!isExpression(property.value) || isDefinitelyFalse(property.value)) {
-      return [];
-    }
-
-    if (property.key.type === "StringLiteral") {
-      return [property.key.value];
-    }
-
-    if (property.key.type === "Identifier") {
-      return [property.key.name];
-    }
-
-    return [];
-  });
-}
-
-function extractStaticValuesFromConditional(expression: ConditionalExpression): string[] {
-  return [
-    ...extractStaticValues(expression.consequent),
-    ...extractStaticValues(expression.alternate),
-  ];
-}
-
-function unwrapExpression(expression: Expression): Expression {
-  let current = expression;
-
-  while (
-    current.type === "TSAsExpression" ||
-    current.type === "TSSatisfiesExpression" ||
-    current.type === "TSTypeAssertion"
-  ) {
-    current = (current as TSAsExpression | TSSatisfiesExpression | TSTypeAssertion).expression;
-  }
-
-  return current;
-}
-
-function templateLiteralToString(node: TemplateLiteral): string {
-  return node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join("");
-}
-
-function isDefinitelyFalse(expression: Expression): boolean {
-  const unwrapped = unwrapExpression(expression);
-
-  return (
-    (unwrapped.type === "BooleanLiteral" && !unwrapped.value) || unwrapped.type === "NullLiteral"
-  );
 }
 
 function skipWhitespace(source: string, offset: number): number {
@@ -458,8 +380,4 @@ function getAttributeLocation(
     element.sourceCodeLocation ??
     undefined
   );
-}
-
-export function canExtractHtml(filePath: string): boolean {
-  return htmlExtractor.extensions.includes(path.extname(filePath));
 }
