@@ -1,4 +1,5 @@
 export type ReportFormat = "terminal" | "json" | "markdown";
+export type FailOnCondition = "duplicates" | "diagnostics" | "warnings" | "errors";
 
 export interface AnalyzeProjectOptions {
   cwd?: string;
@@ -8,6 +9,9 @@ export interface AnalyzeProjectOptions {
   minClasses?: number;
   functions?: string[];
   configFile?: string | false;
+  failOn?: FailOnCondition[];
+  maxGroups?: number;
+  maxOccurrences?: number;
 }
 
 export interface AnalyzeOptions extends AnalyzeProjectOptions {
@@ -22,6 +26,9 @@ export interface ResolvedAnalyzeOptions {
   minClasses: number;
   functions: string[];
   configFile: string | false | undefined;
+  failOn: FailOnCondition[];
+  maxGroups?: number;
+  maxOccurrences?: number;
 }
 
 export interface Extractor {
@@ -88,4 +95,9 @@ export interface AuditReport {
   groups: DuplicateClassGroup[];
   diagnostics: Diagnostic[];
   durationMs: number;
+}
+
+export interface GateResult {
+  failed: boolean;
+  reasons: string[];
 }

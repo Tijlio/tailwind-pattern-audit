@@ -18,6 +18,7 @@ tailwind-pattern-audit --json
 tailwind-pattern-audit --markdown
 tailwind-pattern-audit --min-occurrences 3
 tailwind-pattern-audit --include "src/**/*.{ts,tsx}"
+tailwind-pattern-audit --fail-on duplicates --max-groups 0
 ```
 
 ## Library

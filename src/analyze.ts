@@ -19,8 +19,15 @@ import { TOOL_VERSION } from "./version.js";
 const EXTRACTORS: Extractor[] = [javascriptExtractor];
 
 export async function analyzeProject(options: AnalyzeProjectOptions = {}): Promise<AuditReport> {
-  const startedAt = performance.now();
   const resolvedOptions = await resolveOptions(options);
+
+  return analyzeResolvedProject(resolvedOptions);
+}
+
+export async function analyzeResolvedProject(
+  resolvedOptions: ResolvedAnalyzeOptions,
+): Promise<AuditReport> {
+  const startedAt = performance.now();
   const files = await scanFiles(resolvedOptions);
   const report = await analyzeFilesWithResolvedOptions(files, resolvedOptions, startedAt);
 

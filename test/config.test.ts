@@ -39,6 +39,16 @@ describe("config validation", () => {
       /"minOccurrences" must be a positive integer/,
     );
   });
+
+  it("rejects invalid CI failure conditions from config", async () => {
+    const cwd = await createTempProject({
+      "tailwind-pattern-audit.config.json": JSON.stringify({
+        failOn: ["duplicates", "unknown"],
+      }),
+    });
+
+    await expect(analyzeProject({ cwd })).rejects.toThrow(/"failOn" must be an array/);
+  });
 });
 
 async function createTempProject(files: Record<string, string> = {}): Promise<string> {

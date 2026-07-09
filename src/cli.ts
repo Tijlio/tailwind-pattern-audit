@@ -4,9 +4,11 @@ import path from "node:path";
 
 import { Command } from "commander";
 
-import { analyzeProject } from "./analyze.js";
+import { analyzeResolvedProject } from "./analyze.js";
+import { resolveOptions } from "./config.js";
+import { evaluateCiGate } from "./gate.js";
 import { formatReport } from "./reporters/index.js";
-import type { ReportFormat } from "./types.js";
+import type { FailOnCondition, ReportFormat } from "./types.js";
 import { TOOL_VERSION } from "./version.js";
 
 const program = new Command();
@@ -31,10 +33,24 @@ program
   .option("--output <path>", "Write report to a file instead of stdout.")
   .option("--config <path>", "Path to a config file.")
   .option("--no-config", "Disable config file discovery.")
+  .option(
+    "--fail-on <condition...>",
+    "Set CI failure condition(s): duplicates, diagnostics, warnings, errors.",
+  )
+  .option(
+    "--max-groups <number>",
+    "Fail when duplicate group count exceeds this number.",
+    parseNonNegativeInteger,
+  )
+  .option(
+    "--max-occurrences <number>",
+    "Fail when reported duplicate occurrence count exceeds this number.",
+    parseNonNegativeInteger,
+  )
   .option("--quiet", "Suppress stdout when --output is used.")
   .action(async (options: CliOptions) => {
     const format = resolveFormat(options);
-    const report = await analyzeProject({
+    const analyzeOptions = {
       cwd: options.cwd,
       include: options.include,
       exclude: options.exclude,
@@ -42,8 +58,14 @@ program
       minClasses: options.minClasses,
       functions: options.functions,
       configFile: resolveConfigFileOption(options),
-    });
+      failOn: options.failOn,
+      maxGroups: options.maxGroups,
+      maxOccurrences: options.maxOccurrences,
+    };
+    const resolvedOptions = await resolveOptions(analyzeOptions);
+    const report = await analyzeResolvedProject(resolvedOptions);
     const output = formatReport(report, format);
+    const gate = evaluateCiGate(report, resolvedOptions);
 
     if (options.output) {
       const outputPath = path.resolve(options.cwd ?? process.cwd(), options.output);
@@ -54,10 +76,20 @@ program
         process.stdout.write(`Wrote ${format} report to ${outputPath}\n`);
       }
 
+      if (gate.failed) {
+        writeGateFailure(gate.reasons);
+        process.exitCode = 1;
+      }
+
       return;
     }
 
     process.stdout.write(output);
+
+    if (gate.failed) {
+      writeGateFailure(gate.reasons);
+      process.exitCode = 1;
+    }
   });
 
 program.parseAsync().catch((error: unknown) => {
@@ -78,6 +110,9 @@ interface CliOptions {
   markdown?: boolean;
   output?: string;
   config?: string | boolean;
+  failOn?: FailOnCondition[];
+  maxGroups?: number;
+  maxOccurrences?: number;
   quiet?: boolean;
 }
 
@@ -86,6 +121,16 @@ function parseInteger(value: string): number {
 
   if (!Number.isInteger(parsed) || parsed < 1) {
     throw new Error(`Expected a positive integer, received "${value}".`);
+  }
+
+  return parsed;
+}
+
+function parseNonNegativeInteger(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`Expected a non-negative integer, received "${value}".`);
   }
 
   return parsed;
@@ -117,4 +162,8 @@ function resolveConfigFileOption(options: CliOptions): string | false | undefine
   }
 
   return undefined;
+}
+
+function writeGateFailure(reasons: string[]): void {
+  process.stderr.write(`CI gate failed:\n${reasons.map((reason) => `- ${reason}`).join("\n")}\n`);
 }

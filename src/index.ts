@@ -1,4 +1,5 @@
 export { analyzeFiles, analyzeProject } from "./analyze.js";
+export { evaluateCiGate } from "./gate.js";
 export { AUDIT_REPORT_SCHEMA } from "./report-schema.js";
 export {
   formatReport,
@@ -14,5 +15,7 @@ export type {
   Diagnostic,
   DuplicateClassGroup,
   Extractor,
+  FailOnCondition,
+  GateResult,
   ReportFormat,
 } from "./types.js";

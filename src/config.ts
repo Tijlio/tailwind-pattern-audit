@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { AnalyzeProjectOptions, ResolvedAnalyzeOptions } from "./types.js";
+import type { AnalyzeProjectOptions, FailOnCondition, ResolvedAnalyzeOptions } from "./types.js";
 
 export const DEFAULT_INCLUDE = ["**/*.{js,jsx,ts,tsx}"];
 
@@ -28,7 +28,22 @@ const CONFIG_FILES = [
 
 type ConfigShape = Omit<AnalyzeProjectOptions, "cwd" | "configFile">;
 
-const CONFIG_KEYS = new Set(["include", "exclude", "minOccurrences", "minClasses", "functions"]);
+const CONFIG_KEYS = new Set([
+  "include",
+  "exclude",
+  "minOccurrences",
+  "minClasses",
+  "functions",
+  "failOn",
+  "maxGroups",
+  "maxOccurrences",
+]);
+const FAIL_ON_CONDITIONS = new Set<FailOnCondition>([
+  "duplicates",
+  "diagnostics",
+  "warnings",
+  "errors",
+]);
 
 export class ConfigValidationError extends Error {
   constructor(message: string) {
@@ -47,6 +62,9 @@ export async function resolveOptions(
   const minOccurrences = options.minOccurrences ?? config.minOccurrences ?? 2;
   const minClasses = options.minClasses ?? config.minClasses ?? 3;
   const functions = options.functions ?? config.functions ?? DEFAULT_FUNCTIONS;
+  const failOn = options.failOn ?? config.failOn ?? [];
+  const maxGroups = options.maxGroups ?? config.maxGroups;
+  const maxOccurrences = options.maxOccurrences ?? config.maxOccurrences;
 
   return validateResolvedOptions({
     cwd,
@@ -56,6 +74,9 @@ export async function resolveOptions(
     minClasses,
     functions,
     configFile: options.configFile,
+    failOn,
+    maxGroups,
+    maxOccurrences,
   });
 }
 
@@ -124,6 +145,13 @@ function validateConfigShape(config: unknown, source: string): ConfigShape {
     minOccurrences: validateOptionalPositiveInteger(input.minOccurrences, "minOccurrences", source),
     minClasses: validateOptionalPositiveInteger(input.minClasses, "minClasses", source),
     functions: validateOptionalStringArray(input.functions, "functions", source),
+    failOn: validateOptionalFailOn(input.failOn, source),
+    maxGroups: validateOptionalNonNegativeInteger(input.maxGroups, "maxGroups", source),
+    maxOccurrences: validateOptionalNonNegativeInteger(
+      input.maxOccurrences,
+      "maxOccurrences",
+      source,
+    ),
   };
 }
 
@@ -135,6 +163,13 @@ function validateResolvedOptions(options: ResolvedAnalyzeOptions): ResolvedAnaly
     minOccurrences: validatePositiveInteger(options.minOccurrences, "minOccurrences", "options"),
     minClasses: validatePositiveInteger(options.minClasses, "minClasses", "options"),
     functions: validateStringArray(options.functions, "functions", "options"),
+    failOn: validateFailOn(options.failOn, "options"),
+    maxGroups: validateOptionalNonNegativeInteger(options.maxGroups, "maxGroups", "options"),
+    maxOccurrences: validateOptionalNonNegativeInteger(
+      options.maxOccurrences,
+      "maxOccurrences",
+      "options",
+    ),
   };
 }
 
@@ -179,6 +214,45 @@ function validatePositiveInteger(value: unknown, name: string, source: string): 
   }
 
   return value;
+}
+
+function validateOptionalNonNegativeInteger(
+  value: unknown,
+  name: string,
+  source: string,
+): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Number.isInteger(value) || typeof value !== "number" || value < 0) {
+    throw new ConfigValidationError(`${source}: "${name}" must be a non-negative integer.`);
+  }
+
+  return value;
+}
+
+function validateOptionalFailOn(value: unknown, source: string): FailOnCondition[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return validateFailOn(value, source);
+}
+
+function validateFailOn(value: unknown, source: string): FailOnCondition[] {
+  if (
+    !Array.isArray(value) ||
+    value.some(
+      (item) => typeof item !== "string" || !FAIL_ON_CONDITIONS.has(item as FailOnCondition),
+    )
+  ) {
+    throw new ConfigValidationError(
+      `${source}: "failOn" must be an array containing duplicates, diagnostics, warnings, or errors.`,
+    );
+  }
+
+  return Array.from(new Set(value)) as FailOnCondition[];
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
