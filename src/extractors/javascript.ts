@@ -12,6 +12,11 @@ import type {
 } from "@babel/types";
 
 import { normalizeClassValue } from "../normalize.js";
+import {
+  buildSourceLineIgnores,
+  isSourceLineIgnored,
+  type SourceLineIgnores,
+} from "../source-ignores.js";
 import type {
   ClassOccurrence,
   Diagnostic,
@@ -47,6 +52,7 @@ interface HelperCandidate extends StaticStringValue {
 function extractJavaScript(input: ExtractInput): ExtractResult {
   const diagnostics: Diagnostic[] = [];
   const occurrences: ClassOccurrence[] = [];
+  const lineIgnores = buildSourceLineIgnores(input.source);
 
   let ast: ReturnType<typeof parse>;
 
@@ -106,6 +112,11 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
         }
 
         const location = getLocation(attribute);
+
+        if (isSourceLineIgnored(lineIgnores, location.line)) {
+          return;
+        }
+
         diagnostics.push({
           severity: "info",
           code: "dynamic_classname_skipped",
@@ -123,6 +134,7 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
           occurrences,
           raw: value.raw,
           node: value.node,
+          lineIgnores,
           kind: "jsxAttribute",
           name: "className",
         });
@@ -146,6 +158,7 @@ function extractJavaScript(input: ExtractInput): ExtractResult {
           occurrences,
           raw: value.raw,
           node: value.node,
+          lineIgnores,
           kind: "helperCall",
           name: value.name,
         });
@@ -410,6 +423,7 @@ function addOccurrence(input: {
   occurrences: ClassOccurrence[];
   raw: string;
   node: Node;
+  lineIgnores: SourceLineIgnores;
   kind: ClassOccurrence["source"]["kind"];
   name: string;
 }): void {
@@ -420,6 +434,10 @@ function addOccurrence(input: {
   }
 
   const location = getLocation(input.node);
+
+  if (isSourceLineIgnored(input.lineIgnores, location.line)) {
+    return;
+  }
 
   input.occurrences.push({
     filePath: input.input.relativePath,

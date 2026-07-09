@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11
+
+- Added inline ignore comments for intentional duplicate class patterns.
+- Suppressed ignored dynamic `className` diagnostics alongside ignored static evidence.
+- Documented same-line and next-line ignore usage for JSX and markup files.
+
 ## 0.1.10
 
 - Shared static string extraction between JavaScript and markup extractors.

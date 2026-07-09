@@ -55,7 +55,7 @@ permissions:
   contents: read
   pull-requests: write
 
-- uses: Tijlio/tailwind-pattern-audit@v0.1.10
+- uses: Tijlio/tailwind-pattern-audit@v0.1.11
   with:
     format: pr
     comment: true
@@ -69,6 +69,22 @@ permissions:
 ```
 
 Use `comment: true` with `format: pr` to post or update a compact pull request comment.
+
+## Inline Ignores
+
+Use inline comments when a repeated pattern is intentional:
+
+```tsx
+// tailwind-pattern-audit-ignore-next-line
+<div className="rounded-md border bg-white p-4" />
+
+<div className="rounded-md border bg-white p-4" /> {/* tailwind-pattern-audit-ignore */}
+```
+
+```html
+<!-- tailwind-pattern-audit-ignore-next-line -->
+<section class="rounded-md border bg-white p-4">Ignored</section>
+```
 
 ## Release
 
@@ -97,6 +113,7 @@ Supported in this release:
 - `.js`, `.jsx`, `.ts`, `.tsx`, `.html`, `.astro`, `.vue`, and `.svelte`
 - opt-in similar class set detection
 - baseline filtering for CI adoption
+- inline ignore comments for intentional duplicates
 
 Deferred but planned:
 

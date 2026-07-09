@@ -278,6 +278,51 @@ const active = Astro.props.active;
     );
   });
 
+  it("honors inline ignore comments in JavaScript and JSX files", async () => {
+    const fixture = await createFixture({
+      "src/One.tsx": `
+        export function One() {
+          return <div className="rounded-md border bg-white p-4" />;
+        }
+      `,
+      "src/Two.tsx": `
+        export function Two({ active }: { active: boolean }) {
+          return (
+            <>
+              {/* tailwind-pattern-audit-ignore-next-line */}
+              <section className="p-4 bg-white border rounded-md" />
+              <article className={active ? classes.active : classes.inactive} /> {/* tailwind-pattern-audit-ignore */}
+              <button className={cn("rounded-md border bg-white p-4")} /> {/* tailwind-pattern-audit-ignore */}
+            </>
+          );
+        }
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture, minClasses: 4 });
+
+    expect(report.groups).toHaveLength(0);
+    expect(report.diagnostics).toHaveLength(0);
+  });
+
+  it("honors inline ignore comments in markup files", async () => {
+    const fixture = await createFixture({
+      "src/page.html": `
+        <section class="rounded-md border bg-white p-4">HTML card</section>
+      `,
+      "src/Card.astro": `
+        <!-- tailwind-pattern-audit-ignore-next-line -->
+        <article class="p-4 bg-white border rounded-md">Astro card</article>
+        <div class:list={["rounded-md border bg-white p-4"]}>Ignored list</div> <!-- tailwind-pattern-audit-ignore -->
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture, minClasses: 4 });
+
+    expect(report.groups).toHaveLength(0);
+    expect(report.diagnostics).toHaveLength(0);
+  });
+
   it("can hide duplicate groups made only of layout primitives", async () => {
     const fixture = await createFixture({
       "src/One.tsx": `

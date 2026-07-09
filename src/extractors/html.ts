@@ -4,6 +4,11 @@ import { parseExpression } from "@babel/parser";
 import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 
 import { normalizeClassValue } from "../normalize.js";
+import {
+  buildSourceLineIgnores,
+  isSourceLineIgnored,
+  type SourceLineIgnores,
+} from "../source-ignores.js";
 import type { ClassOccurrence, Diagnostic, ExtractInput, Extractor } from "../types.js";
 import { extractStaticStringValues } from "./static-expressions.js";
 
@@ -35,6 +40,7 @@ function extractHtml(input: ExtractInput): {
 } {
   const occurrences: ClassOccurrence[] = [];
   const preparation = prepareSource(input);
+  const lineIgnores = buildSourceLineIgnores(preparation.source);
   const fragment = parseFragment(preparation.source, { sourceCodeLocationInfo: true });
 
   walkNode(fragment, (element) => {
@@ -49,12 +55,13 @@ function extractHtml(input: ExtractInput): {
       occurrences,
       raw: classAttribute.value,
       location: getAttributeLocation(element, classAttribute.name),
+      lineIgnores,
       name: "class",
     });
   });
 
   if (path.extname(input.filePath) === ".astro") {
-    addAstroClassListOccurrences(input, preparation.source, occurrences);
+    addAstroClassListOccurrences(input, preparation.source, lineIgnores, occurrences);
   }
 
   return { occurrences, diagnostics: preparation.diagnostics };
@@ -149,11 +156,16 @@ function addOccurrence(input: {
   occurrences: ClassOccurrence[];
   raw: string;
   location?: LocationLike;
+  lineIgnores: SourceLineIgnores;
   name: string;
 }): void {
   const normalized = normalizeClassValue(input.raw);
 
   if (!normalized) {
+    return;
+  }
+
+  if (isSourceLineIgnored(input.lineIgnores, input.location?.startLine)) {
     return;
   }
 
@@ -175,6 +187,7 @@ function addOccurrence(input: {
 function addAstroClassListOccurrences(
   input: ExtractInput,
   source: string,
+  lineIgnores: SourceLineIgnores,
   occurrences: ClassOccurrence[],
 ): void {
   let offset = 0;
@@ -197,6 +210,7 @@ function addAstroClassListOccurrences(
           occurrences,
           raw,
           location: getLineColumn(source, attributeOffset),
+          lineIgnores,
           name: "class:list",
         });
       }
