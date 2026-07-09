@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+.vitest/
+.turbo/
+.next/
+*.tsbuildinfo
+
+# Local planning notes are intentionally kept out of the pushed repo.
+docs/
+
