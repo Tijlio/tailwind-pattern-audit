@@ -53,6 +53,7 @@ const CONFIG_FILES = [
 type ConfigShape = Omit<AnalyzeProjectOptions, "cwd" | "configFile">;
 
 const CONFIG_KEYS = new Set([
+  "$schema",
   "include",
   "exclude",
   "minOccurrences",

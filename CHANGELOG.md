@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.12
+
+- Added a published JSON schema for `tailwind-pattern-audit.config.json`.
+- Generated config files now include a `$schema` reference for editor autocomplete.
+- Allowed `$schema` metadata in config validation.
+
 ## 0.1.11
 
 - Added inline ignore comments for intentional duplicate class patterns.

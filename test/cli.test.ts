@@ -52,6 +52,7 @@ describe("CLI", () => {
       const result = await runCli(["init", "--cwd", cwd]);
       const configPath = path.join(cwd, "tailwind-pattern-audit.config.json");
       const config = JSON.parse(await readFile(configPath, "utf8")) as {
+        $schema?: string;
         minClasses?: number;
         hideLayoutOnly?: boolean;
         include?: unknown[];
@@ -60,6 +61,9 @@ describe("CLI", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("Created");
       expect(result.stderr).toBe("");
+      expect(config.$schema).toBe(
+        "https://raw.githubusercontent.com/Tijlio/tailwind-pattern-audit/main/schemas/config.schema.json",
+      );
       expect(config.minClasses).toBe(4);
       expect(config.hideLayoutOnly).toBe(true);
       expect(config.include?.length).toBeGreaterThan(0);

@@ -38,6 +38,7 @@ tailwind-pattern-audit --fail-on duplicates --max-groups 0
 
 `tailwind-pattern-audit init` creates a practical `tailwind-pattern-audit.config.json` with
 focused source globs, `minClasses: 4`, and layout-only filtering for quieter first-run reports.
+Generated configs include a `$schema` reference for editor autocomplete.
 
 ## Library
 
@@ -55,7 +56,7 @@ permissions:
   contents: read
   pull-requests: write
 
-- uses: Tijlio/tailwind-pattern-audit@v0.1.11
+- uses: Tijlio/tailwind-pattern-audit@v0.1.12
   with:
     format: pr
     comment: true
@@ -114,6 +115,7 @@ Supported in this release:
 - opt-in similar class set detection
 - baseline filtering for CI adoption
 - inline ignore comments for intentional duplicates
+- JSON schema for `tailwind-pattern-audit.config.json`
 
 Deferred but planned:
 

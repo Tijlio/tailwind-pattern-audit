@@ -5,6 +5,8 @@ import { DEFAULT_EXCLUDE, DEFAULT_FUNCTIONS } from "./config.js";
 import type { AnalyzeProjectOptions } from "./types.js";
 
 const DEFAULT_INIT_CONFIG_FILE = "tailwind-pattern-audit.config.json";
+const CONFIG_SCHEMA_URL =
+  "https://raw.githubusercontent.com/Tijlio/tailwind-pattern-audit/main/schemas/config.schema.json";
 
 export interface InitConfigOptions {
   cwd?: string;
@@ -23,6 +25,7 @@ class ConfigInitError extends Error {
 }
 
 const DEFAULT_INIT_CONFIG = {
+  $schema: CONFIG_SCHEMA_URL,
   include: [
     "src/**/*.{js,jsx,ts,tsx,html,astro,vue,svelte}",
     "app/**/*.{js,jsx,ts,tsx,html,astro,vue,svelte}",
@@ -35,7 +38,7 @@ const DEFAULT_INIT_CONFIG = {
   priority: ["high", "medium"],
   hideLayoutOnly: true,
   functions: DEFAULT_FUNCTIONS,
-} satisfies AnalyzeProjectOptions;
+} satisfies AnalyzeProjectOptions & { $schema: string };
 
 export async function initConfig(options: InitConfigOptions = {}): Promise<InitConfigResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());

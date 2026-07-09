@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Tijlio/tailwind-pattern-audit/main/schemas/config.schema.json",
+  "title": "Tailwind Pattern Audit Config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON schema reference for editor autocomplete."
+    },
+    "include": {
+      "type": "array",
+      "description": "Glob patterns to scan.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "exclude": {
+      "type": "array",
+      "description": "Glob patterns to exclude.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "minOccurrences": {
+      "type": "integer",
+      "description": "Minimum duplicate occurrences required before reporting a group.",
+      "minimum": 1,
+      "default": 2
+    },
+    "minClasses": {
+      "type": "integer",
+      "description": "Minimum class count required for a class string.",
+      "minimum": 1,
+      "default": 3
+    },
+    "functions": {
+      "type": "array",
+      "description": "Helper function names to scan for static class arguments.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "priority": {
+      "type": "array",
+      "description": "Only include duplicate groups with these recommendation priorities.",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["high", "medium", "low"]
+      }
+    },
+    "kind": {
+      "type": "array",
+      "description": "Only include duplicate groups with these recommendation kinds.",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["component", "cva", "utility"]
+      }
+    },
+    "hideLayoutOnly": {
+      "type": "boolean",
+      "description": "Hide duplicate groups made only of layout primitives.",
+      "default": false
+    },
+    "similar": {
+      "type": "boolean",
+      "description": "Detect near-duplicate class sets.",
+      "default": false
+    },
+    "minSimilarity": {
+      "type": "number",
+      "description": "Minimum Jaccard similarity for near-duplicate groups.",
+      "exclusiveMinimum": 0,
+      "maximum": 1,
+      "default": 0.75
+    },
+    "maxSimilarGroups": {
+      "type": "integer",
+      "description": "Maximum near-duplicate groups to report.",
+      "minimum": 0,
+      "default": 20
+    },
+    "baseline": {
+      "type": "string",
+      "description": "Path to a previous JSON report whose duplicate groups should be ignored.",
+      "minLength": 1
+    },
+    "failOn": {
+      "type": "array",
+      "description": "Conditions that should fail CI.",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["duplicates", "diagnostics", "warnings", "errors"]
+      }
+    },
+    "maxGroups": {
+      "type": "integer",
+      "description": "Fail when duplicate group count exceeds this number.",
+      "minimum": 0
+    },
+    "maxOccurrences": {
+      "type": "integer",
+      "description": "Fail when reported duplicate occurrence count exceeds this number.",
+      "minimum": 0
+    }
+  }
+}

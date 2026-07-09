@@ -28,6 +28,20 @@ describe("config validation", () => {
     );
   });
 
+  it("accepts JSON schema metadata in config files", async () => {
+    const cwd = await createTempProject({
+      "tailwind-pattern-audit.config.json": JSON.stringify({
+        $schema:
+          "https://raw.githubusercontent.com/Tijlio/tailwind-pattern-audit/main/schemas/config.schema.json",
+        minClasses: 4,
+      }),
+    });
+
+    const report = await analyzeProject({ cwd });
+
+    expect(report.groups).toHaveLength(0);
+  });
+
   it("rejects invalid threshold values from config", async () => {
     const cwd = await createTempProject({
       "tailwind-pattern-audit.config.json": JSON.stringify({
