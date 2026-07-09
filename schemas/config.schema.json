@@ -89,6 +89,22 @@
       "description": "Path to a previous JSON report whose duplicate groups should be ignored.",
       "minLength": 1
     },
+    "ignoreFiles": {
+      "type": "array",
+      "description": "Glob patterns for files to omit from report evidence without changing scan discovery.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "ignorePatterns": {
+      "type": "array",
+      "description": "Exact Tailwind class patterns to omit from duplicate and similarity reports. Values are normalized before comparison.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "failOn": {
       "type": "array",
       "description": "Conditions that should fail CI.",

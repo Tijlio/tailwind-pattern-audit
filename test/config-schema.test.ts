@@ -30,6 +30,8 @@ describe("config schema", () => {
         minSimilarity: 0.75,
         maxSimilarGroups: 20,
         baseline: "tailwind-audit-baseline.json",
+        ignoreFiles: ["src/generated/**"],
+        ignorePatterns: ["rounded-md border bg-white p-4"],
         failOn: ["duplicates"],
         maxGroups: 0,
         maxOccurrences: 10,

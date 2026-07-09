@@ -18,8 +18,9 @@ const FORMAT_SHORTCUTS = [
   ["markdown", "markdown"],
   ["pr", "pr"],
   ["github", "github"],
+  ["sarif", "sarif"],
 ] as const;
-const REPORT_FORMATS = new Set<string>(["terminal", "json", "markdown", "pr", "github"]);
+const REPORT_FORMATS = new Set<string>(["terminal", "json", "markdown", "pr", "github", "sarif"]);
 
 program
   .command("init")
@@ -67,15 +68,22 @@ program
     parseNonNegativeInteger,
   )
   .option("--baseline <path>", "Ignore duplicate groups present in a previous JSON report.")
+  .option("--ignore-file <glob>", "Glob for files to omit from report evidence.", collectString)
+  .option(
+    "--ignore-pattern <classes>",
+    "Exact class pattern to omit from duplicate and similarity reports.",
+    collectString,
+  )
   .option(
     "--format <format>",
-    "Output format: terminal, json, markdown, pr, or github.",
+    "Output format: terminal, json, markdown, pr, github, or sarif.",
     "terminal",
   )
   .option("--json", "Shortcut for --format json.")
   .option("--markdown", "Shortcut for --format markdown.")
   .option("--pr", "Shortcut for --format pr.")
   .option("--github", "Shortcut for --format github.")
+  .option("--sarif", "Shortcut for --format sarif.")
   .option(
     "--annotation-limit <number>",
     "Maximum duplicate group annotations for --format github.",
@@ -99,58 +107,7 @@ program
     parseNonNegativeInteger,
   )
   .option("--quiet", "Suppress stdout when --output is used.")
-  .action(async (options: CliOptions) => {
-    const format = resolveFormat(options);
-    const analyzeOptions = {
-      cwd: options.cwd,
-      include: options.include,
-      exclude: options.exclude,
-      minOccurrences: options.minOccurrences,
-      minClasses: options.minClasses,
-      functions: options.functions,
-      priority: options.priority,
-      kind: options.kind,
-      hideLayoutOnly: options.hideLayoutOnly,
-      similar: options.similar,
-      minSimilarity: options.minSimilarity,
-      maxSimilarGroups: options.maxSimilarGroups,
-      baseline: options.baseline,
-      configFile: resolveConfigFileOption(options),
-      failOn: options.failOn,
-      maxGroups: options.maxGroups,
-      maxOccurrences: options.maxOccurrences,
-    };
-    const resolvedOptions = await resolveOptions(analyzeOptions);
-    const report = await analyzeResolvedProject(resolvedOptions);
-    const output = formatReport(report, format, {
-      annotationLimit: options.annotationLimit,
-    });
-    const gate = evaluateCiGate(report, resolvedOptions);
-
-    if (options.output) {
-      const outputPath = path.resolve(options.cwd ?? process.cwd(), options.output);
-      await mkdir(path.dirname(outputPath), { recursive: true });
-      await writeFile(outputPath, output);
-
-      if (!options.quiet) {
-        process.stdout.write(`Wrote ${format} report to ${outputPath}\n`);
-      }
-
-      if (gate.failed) {
-        writeGateFailure(gate.reasons);
-        process.exitCode = 1;
-      }
-
-      return;
-    }
-
-    process.stdout.write(output);
-
-    if (gate.failed) {
-      writeGateFailure(gate.reasons);
-      process.exitCode = 1;
-    }
-  });
+  .action(runAuditCommand);
 
 program.parseAsync().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
@@ -164,7 +121,10 @@ interface CliOptions extends Omit<AnalyzeProjectOptions, "configFile"> {
   markdown?: boolean;
   pr?: boolean;
   github?: boolean;
+  sarif?: boolean;
   annotationLimit?: number;
+  ignoreFile?: string[];
+  ignorePattern?: string[];
   output?: string;
   config?: string | boolean;
   quiet?: boolean;
@@ -173,6 +133,82 @@ interface CliOptions extends Omit<AnalyzeProjectOptions, "configFile"> {
 interface InitCliOptions {
   cwd?: string;
   force?: boolean;
+}
+
+async function runAuditCommand(options: CliOptions): Promise<void> {
+  const format = resolveFormat(options);
+  const resolvedOptions = await resolveOptions(buildAnalyzeOptions(options));
+  const report = await analyzeResolvedProject(resolvedOptions);
+  const output = formatReport(report, format, {
+    annotationLimit: options.annotationLimit,
+  });
+  const gate = evaluateCiGate(report, resolvedOptions);
+
+  await writeFormattedReport(options, format, output, gate);
+}
+
+function buildAnalyzeOptions(options: CliOptions): AnalyzeProjectOptions {
+  return {
+    cwd: options.cwd,
+    include: options.include,
+    exclude: options.exclude,
+    minOccurrences: options.minOccurrences,
+    minClasses: options.minClasses,
+    functions: options.functions,
+    priority: options.priority,
+    kind: options.kind,
+    hideLayoutOnly: options.hideLayoutOnly,
+    similar: options.similar,
+    minSimilarity: options.minSimilarity,
+    maxSimilarGroups: options.maxSimilarGroups,
+    baseline: options.baseline,
+    ignoreFiles: options.ignoreFile,
+    ignorePatterns: options.ignorePattern,
+    configFile: resolveConfigFileOption(options),
+    failOn: options.failOn,
+    maxGroups: options.maxGroups,
+    maxOccurrences: options.maxOccurrences,
+  };
+}
+
+async function writeFormattedReport(
+  options: CliOptions,
+  format: ReportFormat,
+  output: string,
+  gate: ReturnType<typeof evaluateCiGate>,
+): Promise<void> {
+  if (options.output) {
+    await writeReportFile(options, format, output);
+  } else {
+    process.stdout.write(output);
+  }
+
+  applyGateResult(gate);
+}
+
+async function writeReportFile(
+  options: CliOptions,
+  format: ReportFormat,
+  output: string,
+): Promise<void> {
+  if (!options.output) {
+    return;
+  }
+
+  const outputPath = path.resolve(options.cwd ?? process.cwd(), options.output);
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, output);
+
+  if (!options.quiet) {
+    process.stdout.write(`Wrote ${format} report to ${outputPath}\n`);
+  }
+}
+
+function applyGateResult(gate: ReturnType<typeof evaluateCiGate>): void {
+  if (gate.failed) {
+    writeGateFailure(gate.reasons);
+    process.exitCode = 1;
+  }
 }
 
 function parseInteger(value: string): number {
@@ -205,6 +241,10 @@ function parseSimilarity(value: string): number {
   return parsed;
 }
 
+function collectString(value: string, previous: string[] = []): string[] {
+  return [...previous, value];
+}
+
 function resolveFormat(options: CliOptions): ReportFormat {
   const shortcut = FORMAT_SHORTCUTS.find(([option]) => options[option]);
 
@@ -217,7 +257,7 @@ function resolveFormat(options: CliOptions): ReportFormat {
   }
 
   throw new Error(
-    `Unsupported format "${options.format}". Expected terminal, json, markdown, pr, or github.`,
+    `Unsupported format "${options.format}". Expected terminal, json, markdown, pr, github, or sarif.`,
   );
 }
 

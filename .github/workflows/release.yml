@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"
+      - "v*.*.*-*"
 
 permissions:
   contents: read
@@ -59,4 +60,9 @@ jobs:
       - name: Publish
         run: |
           npm --version
-          npm publish --access public
+          package_version="$(node -p "require('./package.json').version")"
+          if [[ "$package_version" == *-* ]]; then
+            npm publish --access public --tag next
+          else
+            npm publish --access public
+          fi

@@ -160,7 +160,7 @@ export const AUDIT_REPORT_SCHEMA = {
       required: ["extractor", "kind", "name"],
       properties: {
         extractor: { type: "string", minLength: 1 },
-        kind: { enum: ["jsxAttribute", "helperCall"] },
+        kind: { enum: ["jsxAttribute", "helperCall", "htmlAttribute"] },
         name: { type: "string", minLength: 1 },
       },
     },

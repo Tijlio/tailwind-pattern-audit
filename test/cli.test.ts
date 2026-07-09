@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -101,6 +101,63 @@ describe("CLI", () => {
     expect(result.stdout).toContain("Tailwind Pattern Audit twpa-001");
     expect(result.stdout).toContain("Showing 1 of");
     expect(result.stderr).toBe("");
+  });
+
+  it("prints SARIF reports", async () => {
+    const result = await runCli(["--cwd", fixture, "--sarif"]);
+    const sarif = JSON.parse(result.stdout) as {
+      version: string;
+      runs: Array<{ results: unknown[] }>;
+    };
+
+    expect(result.exitCode).toBe(0);
+    expect(sarif.version).toBe("2.1.0");
+    expect(sarif.runs[0]?.results.length).toBeGreaterThan(0);
+    expect(result.stderr).toBe("");
+  });
+
+  it("filters reports with CLI ignore options", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "twpa-cli-ignore-"));
+
+    try {
+      await cp(fixture, cwd, { recursive: true });
+      await writeFile(
+        path.join(cwd, "tailwind-pattern-audit.config.json"),
+        JSON.stringify({
+          ignorePatterns: ["inline-flex items-center rounded-md px-4 py-2 text-sm font-medium"],
+        }),
+      );
+
+      const result = await runCli([
+        "--cwd",
+        cwd,
+        "--json",
+        "--ignore-file",
+        "src/components/ui/**",
+      ]);
+      const report = JSON.parse(result.stdout) as {
+        groups: Array<{ normalized: string; occurrences: Array<{ filePath: string }> }>;
+      };
+
+      expect(result.exitCode).toBe(0);
+      expect(
+        report.groups.some(
+          (group) =>
+            group.normalized ===
+            "font-medium inline-flex items-center px-4 py-2 rounded-md text-sm",
+        ),
+      ).toBe(false);
+      expect(
+        report.groups.some((group) =>
+          group.occurrences.some((occurrence) =>
+            occurrence.filePath.startsWith("src/components/ui/"),
+          ),
+        ),
+      ).toBe(false);
+      expect(result.stderr).toBe("");
+    } finally {
+      await rm(cwd, { force: true, recursive: true });
+    }
   });
 
   it("prints similar groups in JSON reports when enabled", async () => {

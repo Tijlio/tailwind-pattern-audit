@@ -14,7 +14,7 @@ pnpm tailwind-pattern-audit --format markdown --output tailwind-audit.md
 ```
 
 The tool focuses on deterministic evidence: duplicate static class strings, file and line
-references, and JSON/Markdown output that other tools can consume.
+references, and JSON/Markdown/SARIF output that other tools can consume.
 
 ## CLI
 
@@ -31,10 +31,13 @@ tailwind-pattern-audit --hide-layout-only
 tailwind-pattern-audit --similar --min-similarity 0.7
 tailwind-pattern-audit --format pr
 tailwind-pattern-audit --format github --annotation-limit 25
+tailwind-pattern-audit --format sarif --output tailwind-audit.sarif.json
 tailwind-pattern-audit --include "src/**/*.{ts,tsx}"
 tailwind-pattern-audit --json --output tailwind-audit-baseline.json
 tailwind-pattern-audit --baseline tailwind-audit-baseline.json --fail-on duplicates
 tailwind-pattern-audit --fail-on duplicates --max-groups 0
+tailwind-pattern-audit --ignore-file "src/generated/**"
+tailwind-pattern-audit --ignore-pattern "rounded-md border bg-white p-4"
 ```
 
 `tailwind-pattern-audit init` creates a practical `tailwind-pattern-audit.config.json` with
@@ -44,10 +47,11 @@ Generated configs include a `$schema` reference for editor autocomplete.
 ## Library
 
 ```ts
-import { analyzeProject, formatReport } from "tailwind-pattern-audit";
+import { analyzeProject, formatReport, generateSarif } from "tailwind-pattern-audit";
 
 const report = await analyzeProject({ cwd: process.cwd() });
 console.log(formatReport(report, "markdown"));
+console.log(generateSarif(report));
 ```
 
 ## GitHub Action
@@ -57,7 +61,7 @@ permissions:
   contents: read
   pull-requests: write
 
-- uses: Tijlio/tailwind-pattern-audit@v0.1.13
+- uses: Tijlio/tailwind-pattern-audit@v1.0.0
   with:
     format: pr
     comment: true
@@ -69,12 +73,17 @@ permissions:
     baseline: tailwind-audit-baseline.json
     similar: true
     min-similarity: 0.7
+    ignore-files: |
+      src/generated/**
+    ignore-patterns: |
+      rounded-md border bg-white p-4
     node-version: 24
 ```
 
 Use `comment: true` with `format: pr` to post or update a compact pull request comment.
 Use `annotations: true` to add duplicate groups and warning/error diagnostics to the GitHub
 Checks UI.
+Use `format: sarif` when you want a machine-readable report for code-scanning style tooling.
 
 ## Inline Ignores
 
@@ -97,12 +106,12 @@ Use inline comments when a repeated pattern is intentional:
 After the changelog and release changes are committed, create and push a version tag:
 
 ```bash
-pnpm version patch
+pnpm version patch # or minor/major/prerelease
 git push origin main --follow-tags
 ```
 
 `.github/workflows/release.yml` publishes matching `v*.*.*` tags to npm through trusted
-publishing.
+publishing. Prerelease versions are published under the npm `next` dist tag.
 
 ## Scope
 
@@ -120,8 +129,10 @@ Supported in this release:
 - opt-in similar class set detection
 - baseline filtering for CI adoption
 - inline ignore comments for intentional duplicates
+- report-level ignore controls for generated files and known repeated class patterns
 - JSON schema for `tailwind-pattern-audit.config.json`
 - GitHub workflow annotation output
+- SARIF report output
 
 Deferred but planned:
 

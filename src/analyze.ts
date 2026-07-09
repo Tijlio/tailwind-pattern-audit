@@ -1,10 +1,14 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import picomatch from "picomatch";
+
 import { resolveOptions } from "./config.js";
 import { htmlExtractor } from "./extractors/html.js";
 import { javascriptExtractor } from "./extractors/javascript.js";
+import { normalizeClassValue } from "./normalize.js";
 import { scanFiles } from "./scanner.js";
+import { formatError, isPlainObject } from "./shared-utils.js";
 import type {
   AnalyzeOptions,
   AnalyzeProjectOptions,
@@ -32,6 +36,11 @@ interface SimilarityPair {
   similarity: number;
   sharedTokens: string[];
   candidates: [SimilarClassCandidate, SimilarClassCandidate];
+}
+
+interface ReportFilters {
+  ignoredFiles?: (filePath: string) => boolean;
+  ignoredPatterns: Set<string>;
 }
 
 export async function analyzeProject(options: AnalyzeProjectOptions = {}): Promise<AuditReport> {
@@ -93,21 +102,63 @@ async function analyzeFilesWithResolvedOptions(
     diagnostics.push(...result.diagnostics);
   }
 
+  const reportFilters = buildReportFilters(options);
+  const reportOccurrences = filterReportOccurrences(occurrences, reportFilters);
+  const reportDiagnostics = filterReportDiagnostics(diagnostics, reportFilters);
   const baselineGroups = options.baseline ? await loadBaselineGroups(options) : undefined;
-  const groups = buildDuplicateGroups(occurrences, options, baselineGroups);
-  const similarGroups = options.similar ? buildSimilarGroups(occurrences, options) : undefined;
+  const groups = buildDuplicateGroups(reportOccurrences, options, baselineGroups);
+  const similarGroups = options.similar
+    ? buildSimilarGroups(reportOccurrences, options)
+    : undefined;
 
   return {
     schemaVersion: 1,
     toolVersion: TOOL_VERSION,
     cwd: options.cwd,
     scannedFiles,
-    occurrences: occurrences.length,
+    occurrences: reportOccurrences.length,
     groups,
     ...(similarGroups ? { similarGroups } : {}),
-    diagnostics,
+    diagnostics: reportDiagnostics,
     durationMs: Math.round(performance.now() - startedAt),
   };
+}
+
+function buildReportFilters(options: ResolvedAnalyzeOptions): ReportFilters {
+  const ignoredPatterns = new Set(
+    options.ignorePatterns
+      .map((pattern) => normalizeClassValue(pattern)?.normalized)
+      .filter((pattern): pattern is string => Boolean(pattern)),
+  );
+
+  return {
+    ignoredPatterns,
+    ignoredFiles:
+      options.ignoreFiles.length > 0
+        ? picomatch(options.ignoreFiles, { dot: true, windows: false })
+        : undefined,
+  };
+}
+
+function filterReportOccurrences(
+  occurrences: ClassOccurrence[],
+  filters: ReportFilters,
+): ClassOccurrence[] {
+  return occurrences.filter(
+    (occurrence) =>
+      !filters.ignoredPatterns.has(occurrence.normalized) &&
+      !filters.ignoredFiles?.(occurrence.filePath),
+  );
+}
+
+function filterReportDiagnostics(diagnostics: Diagnostic[], filters: ReportFilters): Diagnostic[] {
+  if (!filters.ignoredFiles) {
+    return diagnostics;
+  }
+
+  return diagnostics.filter(
+    (diagnostic) => !diagnostic.filePath || !filters.ignoredFiles?.(diagnostic.filePath),
+  );
 }
 
 function findExtractor(filePath: string): Extractor | undefined {
@@ -627,12 +678,4 @@ function compareOccurrences(a: ClassOccurrence, b: ClassOccurrence): number {
 
 function normalizePath(filePath: string): string {
   return filePath.split(path.sep).join("/");
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function formatError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

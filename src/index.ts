@@ -9,6 +9,7 @@ export {
   generateJson,
   generateMarkdown,
   generatePr,
+  generateSarif,
   generateTerminal,
 } from "./reporters/index.js";
 export type {

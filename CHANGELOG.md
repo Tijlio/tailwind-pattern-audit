@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0
+
+- Added SARIF report output with `--format sarif` and `--sarif`.
+- Added report-level ignore controls for generated files and known repeated class patterns.
+- Added `ignoreFiles` and `ignorePatterns` config options and GitHub Action inputs.
+- Fixed the JSON report schema so markup occurrence sources validate correctly.
+- Added prerelease-aware npm publishing for future release candidates.
+
 ## 0.1.13
 
 - Added `--format github` for GitHub workflow annotation output.

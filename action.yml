@@ -44,8 +44,14 @@ inputs:
   baseline:
     description: Previous JSON report whose duplicate groups should be ignored.
     required: false
+  ignore-files:
+    description: Newline-separated file globs to omit from report evidence.
+    required: false
+  ignore-patterns:
+    description: Newline-separated exact class patterns to omit from duplicate and similarity reports.
+    required: false
   format:
-    description: "Output format: terminal, json, markdown, pr, or github."
+    description: "Output format: terminal, json, markdown, pr, github, or sarif."
     required: false
     default: "terminal"
   output:
@@ -100,6 +106,17 @@ runs:
         args=(--cwd "${{ inputs.cwd }}" --format "${{ inputs.format }}")
         report_path="${{ inputs.output }}"
 
+        append_multiline_args() {
+          local option_name="$1"
+          local values="$2"
+
+          while IFS= read -r value; do
+            if [ -n "$value" ]; then
+              args+=("$option_name" "$value")
+            fi
+          done <<< "$values"
+        }
+
         if [ -n "$report_path" ] && [[ "$report_path" != /* ]]; then
           report_path="${{ inputs.cwd }}/$report_path"
         fi
@@ -147,6 +164,9 @@ runs:
         if [ -n "${{ inputs.baseline }}" ]; then
           args+=(--baseline "${{ inputs.baseline }}")
         fi
+
+        append_multiline_args "--ignore-file" "${{ inputs.ignore-files }}"
+        append_multiline_args "--ignore-pattern" "${{ inputs.ignore-patterns }}"
 
         annotation_args=("${args[@]}")
         annotation_args[3]="github"

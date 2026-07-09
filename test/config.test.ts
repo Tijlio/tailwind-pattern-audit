@@ -42,6 +42,19 @@ describe("config validation", () => {
     expect(report.groups).toHaveLength(0);
   });
 
+  it("accepts report ignore controls in config files", async () => {
+    const cwd = await createTempProject({
+      "tailwind-pattern-audit.config.json": JSON.stringify({
+        ignoreFiles: ["src/ignored/**"],
+        ignorePatterns: ["rounded-md border bg-white p-4"],
+      }),
+    });
+
+    const report = await analyzeProject({ cwd });
+
+    expect(report.groups).toHaveLength(0);
+  });
+
   it("rejects invalid threshold values from config", async () => {
     const cwd = await createTempProject({
       "tailwind-pattern-audit.config.json": JSON.stringify({

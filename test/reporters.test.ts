@@ -181,4 +181,42 @@ describe("formatReport", () => {
     );
     expect(github).not.toContain("dynamic_classname_skipped");
   });
+
+  it("formats SARIF output for duplicate groups and diagnostics", () => {
+    const sarif = JSON.parse(formatReport(report, "sarif")) as {
+      version: string;
+      runs: Array<{
+        tool: { driver: { rules: Array<{ id: string }> } };
+        results: Array<{
+          ruleId: string;
+          level: string;
+          locations?: Array<{
+            physicalLocation: {
+              artifactLocation: { uri: string };
+              region?: { startLine: number; startColumn?: number };
+            };
+          }>;
+          relatedLocations?: unknown[];
+        }>;
+      }>;
+    };
+
+    expect(sarif.version).toBe("2.1.0");
+    expect(sarif.runs[0]?.tool.driver.rules.map((rule) => rule.id)).toContain(
+      "tailwind-pattern-audit/duplicate-pattern",
+    );
+    expect(sarif.runs[0]?.results[0]).toMatchObject({
+      ruleId: "tailwind-pattern-audit/duplicate-pattern",
+      level: "warning",
+    });
+    expect(sarif.runs[0]?.results[0]?.locations?.[0]?.physicalLocation.artifactLocation.uri).toBe(
+      "src/A.tsx",
+    );
+    expect(sarif.runs[0]?.results[0]?.relatedLocations).toHaveLength(1);
+    expect(
+      sarif.runs[0]?.results.some(
+        (result) => result.ruleId === "tailwind-pattern-audit/parse_recovered",
+      ),
+    ).toBe(true);
+  });
 });

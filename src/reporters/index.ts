@@ -2,10 +2,18 @@ import { generateGithubAnnotations } from "./github.js";
 import { generateJson } from "./json.js";
 import { generateMarkdown } from "./markdown.js";
 import { generatePr } from "./pr.js";
+import { generateSarif } from "./sarif.js";
 import { generateTerminal } from "./terminal.js";
 import type { AuditReport, ReportFormat, ReportFormatOptions } from "../types.js";
 
-export { generateGithubAnnotations, generateJson, generateMarkdown, generatePr, generateTerminal };
+export {
+  generateGithubAnnotations,
+  generateJson,
+  generateMarkdown,
+  generatePr,
+  generateSarif,
+  generateTerminal,
+};
 
 export function formatReport(
   report: AuditReport,
@@ -21,6 +29,8 @@ export function formatReport(
       return generateMarkdown(report);
     case "pr":
       return generatePr(report);
+    case "sarif":
+      return generateSarif(report);
     case "terminal":
       return generateTerminal(report);
   }

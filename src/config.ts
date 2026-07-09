@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { formatError, isPlainObject } from "./shared-utils.js";
 import type {
   AnalyzeProjectOptions,
   FailOnCondition,
@@ -40,6 +41,8 @@ const DEFAULT_RESOLVED_OPTIONS: Omit<
   similar: false,
   minSimilarity: 0.75,
   maxSimilarGroups: 20,
+  ignoreFiles: [],
+  ignorePatterns: [],
   failOn: [],
 };
 
@@ -66,6 +69,8 @@ const CONFIG_KEYS = new Set([
   "minSimilarity",
   "maxSimilarGroups",
   "baseline",
+  "ignoreFiles",
+  "ignorePatterns",
   "failOn",
   "maxGroups",
   "maxOccurrences",
@@ -111,6 +116,8 @@ export async function resolveOptions(
     minSimilarity: mergedOptions.minSimilarity,
     maxSimilarGroups: mergedOptions.maxSimilarGroups,
     baseline: mergedOptions.baseline,
+    ignoreFiles: mergedOptions.ignoreFiles,
+    ignorePatterns: mergedOptions.ignorePatterns,
     configFile: options.configFile,
     failOn: mergedOptions.failOn,
     maxGroups: mergedOptions.maxGroups,
@@ -206,6 +213,8 @@ function validateConfigShape(config: unknown, source: string): ConfigShape {
       source,
     ),
     baseline: validateOptionalString(input.baseline, "baseline", source),
+    ignoreFiles: validateOptionalStringArray(input.ignoreFiles, "ignoreFiles", source),
+    ignorePatterns: validateOptionalStringArray(input.ignorePatterns, "ignorePatterns", source),
     failOn: validateOptionalFailOn(input.failOn, source),
     maxGroups: validateOptionalNonNegativeInteger(input.maxGroups, "maxGroups", source),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -235,6 +244,8 @@ function validateResolvedOptions(options: ResolvedAnalyzeOptions): ResolvedAnaly
       "options",
     ),
     baseline: validateOptionalString(options.baseline, "baseline", "options"),
+    ignoreFiles: validateStringArray(options.ignoreFiles, "ignoreFiles", "options"),
+    ignorePatterns: validateStringArray(options.ignorePatterns, "ignorePatterns", "options"),
     failOn: validateFailOn(options.failOn, "options"),
     maxGroups: validateOptionalNonNegativeInteger(options.maxGroups, "maxGroups", "options"),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -440,12 +451,4 @@ function validateFailOn(value: unknown, source: string): FailOnCondition[] {
   }
 
   return Array.from(new Set(value)) as FailOnCondition[];
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function formatError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

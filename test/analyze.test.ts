@@ -89,6 +89,67 @@ describe("analyzeFiles", () => {
     expect(report.groups).toHaveLength(0);
   });
 
+  it("filters duplicate groups by ignored normalized class patterns", async () => {
+    const fixture = await createFixture({
+      "src/One.tsx": `
+        export function One() {
+          return <button className="rounded-md border bg-white p-4" />;
+        }
+      `,
+      "src/Two.tsx": `
+        export function Two() {
+          return <a className="p-4 bg-white border rounded-md" />;
+        }
+      `,
+    });
+
+    const report = await analyzeProject({
+      cwd: fixture,
+      minClasses: 4,
+      ignorePatterns: ["p-4 bg-white border rounded-md"],
+    });
+
+    expect(report.occurrences).toBe(0);
+    expect(report.groups).toHaveLength(0);
+  });
+
+  it("filters report evidence and diagnostics by ignored file globs", async () => {
+    const fixture = await createFixture({
+      "src/One.tsx": `
+        export function One({ active }: { active: boolean }) {
+          return (
+            <>
+              <button className="rounded-md border bg-white p-4" />
+              <div className={active ? classes.active : classes.inactive} />
+            </>
+          );
+        }
+      `,
+      "src/ignored/Two.tsx": `
+        export function Two({ active }: { active: boolean }) {
+          return (
+            <>
+              <a className="p-4 bg-white border rounded-md" />
+              <div className={active ? classes.active : classes.inactive} />
+            </>
+          );
+        }
+      `,
+    });
+
+    const report = await analyzeProject({
+      cwd: fixture,
+      minClasses: 4,
+      ignoreFiles: ["src/ignored/**"],
+    });
+
+    expect(report.scannedFiles).toBe(2);
+    expect(report.occurrences).toBe(1);
+    expect(report.groups).toHaveLength(0);
+    expect(report.diagnostics).toHaveLength(1);
+    expect(report.diagnostics[0]?.filePath).toBe("src/One.tsx");
+  });
+
   it("extracts static branches from JSX conditional className expressions", async () => {
     const fixture = await createFixture({
       "src/Conditional.tsx": `
