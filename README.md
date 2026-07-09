@@ -1,5 +1,9 @@
 # tailwind-pattern-audit
 
+[![npm version](https://img.shields.io/npm/v/tailwind-pattern-audit.svg)](https://www.npmjs.com/package/tailwind-pattern-audit)
+[![CI](https://github.com/Tijlio/tailwind-pattern-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/Tijlio/tailwind-pattern-audit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Find repeated Tailwind class patterns in JavaScript and TypeScript projects.
 
 Requires Node.js 20 or newer.
@@ -42,7 +46,7 @@ console.log(formatReport(report, "markdown"));
 ## GitHub Action
 
 ```yaml
-- uses: Tijlio/tailwind-pattern-audit@v0.1.0
+- uses: Tijlio/tailwind-pattern-audit@v0.1.1
   with:
     format: markdown
     output: tailwind-audit.md

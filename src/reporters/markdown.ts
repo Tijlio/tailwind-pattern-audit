@@ -1,5 +1,7 @@
 import type { AuditReport, DuplicateClassGroup } from "../types.js";
 
+const TOP_CANDIDATE_LIMIT = 5;
+
 export function generateMarkdown(report: AuditReport): string {
   const lines = [
     "# Tailwind Pattern Audit",
@@ -17,6 +19,8 @@ export function generateMarkdown(report: AuditReport): string {
   if (report.groups.length === 0) {
     lines.push("No duplicate Tailwind class patterns found.", "");
   } else {
+    lines.push(...formatTopCandidates(report), "", "## Duplicate Groups", "");
+
     for (const group of report.groups) {
       lines.push(...formatGroup(group), "");
     }
@@ -68,9 +72,58 @@ function countBy(
   return report.groups.filter((group) => group.recommendation[property] === value).length;
 }
 
+function formatTopCandidates(report: AuditReport): string[] {
+  const lines = ["## Top Candidates", ""];
+  const sections = [
+    ["Component Candidates", "component"],
+    ["CVA Candidates", "cva"],
+    ["Utility Candidates", "utility"],
+  ] as const;
+
+  for (const [title, kind] of sections) {
+    const groups = report.groups
+      .filter((group) => group.recommendation.kind === kind)
+      .slice(0, TOP_CANDIDATE_LIMIT);
+
+    if (groups.length === 0) {
+      continue;
+    }
+
+    lines.push(`### ${title}`, "");
+    lines.push("| ID | Priority | Occurrences | Classes | Top files | Pattern |");
+    lines.push("| --- | --- | ---: | ---: | --- | --- |");
+
+    for (const group of groups) {
+      lines.push(formatTopCandidateRow(group));
+    }
+
+    lines.push("");
+  }
+
+  return lines;
+}
+
+function formatTopCandidateRow(group: DuplicateClassGroup): string {
+  return `| ${[
+    `[\`${group.id}\`](#${group.id})`,
+    group.recommendation.priority,
+    String(group.occurrenceCount),
+    String(group.classCount),
+    formatTopFiles(group),
+    formatInlineCodeForTable(group.rawValues[0]?.value ?? group.normalized),
+  ].join(" | ")} |`;
+}
+
+function formatTopFiles(group: DuplicateClassGroup): string {
+  return group.recommendation.topFiles
+    .map((topFile) => `${topFile.filePath} (${topFile.count})`)
+    .map(escapeMarkdownTable)
+    .join("<br>");
+}
+
 function formatGroup(group: DuplicateClassGroup): string[] {
   const lines = [
-    `## ${group.id}`,
+    `### ${group.id}`,
     "",
     `- Occurrences: ${group.occurrenceCount}`,
     `- Classes: ${group.classCount}`,
@@ -110,4 +163,8 @@ function escapeMarkdownTable(value: string): string {
 
 function escapeInlineCode(value: string): string {
   return value.replaceAll("`", "\\`").replaceAll("\n", " ");
+}
+
+function formatInlineCodeForTable(value: string): string {
+  return `\`${escapeMarkdownTable(escapeInlineCode(value))}\``;
 }

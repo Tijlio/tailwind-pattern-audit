@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
 - Added npm trusted-publishing release workflow.
 - Added `tailwind-pattern-audit init` for generating a starter config.
 - Added recommendation filtering by priority and kind.
 - Added priority and kind summaries to terminal and Markdown reports.
+- Added README status badges.
+- Improved Markdown reports with grouped top-candidate sections.
 
 ## 0.1.0
 

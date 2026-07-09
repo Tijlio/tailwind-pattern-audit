@@ -70,6 +70,10 @@ describe("formatReport", () => {
     const markdown = formatReport(report, "markdown");
 
     expect(markdown).toContain("# Tailwind Pattern Audit");
+    expect(markdown).toContain("## Top Candidates");
+    expect(markdown).toContain("### Component Candidates");
+    expect(markdown).toContain("[`twpa-001`](#twpa-001)");
+    expect(markdown).toContain("## Duplicate Groups");
     expect(markdown).toContain("src/A.tsx:3:18");
     expect(markdown).toContain("twpa-001");
     expect(markdown).toContain("Recommendation: medium component");
