@@ -24,10 +24,10 @@ export class ConfigInitError extends Error {
 
 const DEFAULT_INIT_CONFIG = {
   include: [
-    "src/**/*.{js,jsx,ts,tsx}",
-    "app/**/*.{js,jsx,ts,tsx}",
-    "pages/**/*.{js,jsx,ts,tsx}",
-    "components/**/*.{js,jsx,ts,tsx}",
+    "src/**/*.{js,jsx,ts,tsx,html,astro}",
+    "app/**/*.{js,jsx,ts,tsx,html,astro}",
+    "pages/**/*.{js,jsx,ts,tsx,html,astro}",
+    "components/**/*.{js,jsx,ts,tsx,html,astro}",
   ],
   exclude: [...DEFAULT_EXCLUDE, "**/.vercel/**", "**/storybook-static/**"],
   minOccurrences: 2,

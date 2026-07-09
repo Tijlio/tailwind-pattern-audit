@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { resolveOptions } from "./config.js";
+import { htmlExtractor } from "./extractors/html.js";
 import { javascriptExtractor } from "./extractors/javascript.js";
 import { scanFiles } from "./scanner.js";
 import type {
@@ -19,7 +20,7 @@ import type {
 } from "./types.js";
 import { TOOL_VERSION } from "./version.js";
 
-const EXTRACTORS: Extractor[] = [javascriptExtractor];
+const EXTRACTORS: Extractor[] = [javascriptExtractor, htmlExtractor];
 const SIMILARITY_CANDIDATE_LIMIT = 1000;
 
 interface SimilarityCandidate extends SimilarClassCandidate {

@@ -109,6 +109,33 @@ describe("analyzeFiles", () => {
     ]);
   });
 
+  it("extracts static class attributes from HTML and Astro markup", async () => {
+    const fixture = await createFixture({
+      "src/page.html": `
+        <main>
+          <section class="rounded-md border bg-white p-4">HTML card</section>
+        </main>
+      `,
+      "src/Card.astro": `---
+const ignored = '<div class="rounded-md border bg-white p-4"></div>';
+---
+<article class="p-4 bg-white border rounded-md">Astro card</article>
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture, minClasses: 4 });
+
+    expect(report.groups).toHaveLength(1);
+    expect(report.groups[0]).toMatchObject({
+      occurrenceCount: 2,
+      normalized: "bg-white border p-4 rounded-md",
+    });
+    expect(report.groups[0]?.occurrences.map((occurrence) => occurrence.source)).toEqual([
+      { extractor: "html", kind: "htmlAttribute", name: "class" },
+      { extractor: "html", kind: "htmlAttribute", name: "class" },
+    ]);
+  });
+
   it("extracts CVA base, variant, and compound variant class candidates", async () => {
     const fixture = await createFixture({
       "src/button.ts": `

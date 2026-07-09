@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Added static `class` attribute extraction for `.html` and `.astro` files.
+- Added Astro frontmatter handling so script strings are not counted as markup evidence.
+- Expanded default scan globs and starter config to include HTML and Astro files.
+
 ## 0.1.3
 
 - Added opt-in near-duplicate class set detection with `--similar`.

@@ -75,7 +75,7 @@ export interface ClassOccurrence {
 
 export interface ClassOccurrenceSource {
   extractor: string;
-  kind: "jsxAttribute" | "helperCall";
+  kind: "jsxAttribute" | "helperCall" | "htmlAttribute";
   name: string;
 }
 
