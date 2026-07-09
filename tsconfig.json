@@ -16,6 +16,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src", "test", "*.config.ts", "*.config.js", "eslint.config.js"],
+  "include": ["src", "test", "scripts", "*.config.ts", "*.config.js", "eslint.config.js"],
   "exclude": ["test/fixtures"]
 }

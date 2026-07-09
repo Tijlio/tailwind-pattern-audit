@@ -60,6 +60,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "smoke:reports": "tsx scripts/smoke-reports.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
