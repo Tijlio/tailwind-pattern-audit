@@ -51,6 +51,10 @@ inputs:
   output:
     description: Optional report output path.
     required: false
+  comment:
+    description: Post or update a pull request comment with the report.
+    required: false
+    default: "false"
   fail-on:
     description: "Space-separated failure conditions: duplicates, diagnostics, warnings, errors."
     required: false
@@ -79,11 +83,18 @@ runs:
 
     - name: Run audit
       shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
         set -f
 
         args=(--cwd "${{ inputs.cwd }}" --format "${{ inputs.format }}")
+        report_path="${{ inputs.output }}"
+
+        if [ -n "$report_path" ] && [[ "$report_path" != /* ]]; then
+          report_path="${{ inputs.cwd }}/$report_path"
+        fi
 
         if [ -n "${{ inputs.include }}" ]; then
           args+=(--include ${{ inputs.include }})
@@ -133,6 +144,11 @@ runs:
           args+=(--output "${{ inputs.output }}")
         fi
 
+        if [ "${{ inputs.comment }}" = "true" ] && [ -z "$report_path" ]; then
+          report_path="$(mktemp)"
+          args+=(--output "$report_path" --quiet)
+        fi
+
         if [ -n "${{ inputs.fail-on }}" ]; then
           args+=(--fail-on ${{ inputs.fail-on }})
         fi
@@ -145,4 +161,35 @@ runs:
           args+=(--max-occurrences "${{ inputs.max-occurrences }}")
         fi
 
+        set +e
         npx --yes "tailwind-pattern-audit@${{ inputs.version }}" "${args[@]}"
+        status=$?
+        set -e
+
+        if [ "${{ inputs.comment }}" = "true" ]; then
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.event_name }}" != "pull_request_target" ]; then
+            echo "::warning::comment input is true, but this workflow is not running on a pull request event."
+          elif [ -z "$report_path" ] || [ ! -f "$report_path" ]; then
+            echo "::warning::comment input is true, but no report output was available to post."
+          else
+            marker="<!-- tailwind-pattern-audit -->"
+            body_file="$(mktemp)"
+            {
+              printf '%s\n' "$marker"
+              cat "$report_path"
+            } > "$body_file"
+
+            comments_endpoint="repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
+            existing_comment_id="$(
+              gh api "$comments_endpoint" --jq ".[] | select(.user.type == \"Bot\" and (.body | contains(\"$marker\"))) | .id" | head -n 1
+            )"
+
+            if [ -n "$existing_comment_id" ]; then
+              gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${existing_comment_id}" -f body="$(cat "$body_file")" >/dev/null
+            else
+              gh api -X POST "$comments_endpoint" -f body="$(cat "$body_file")" >/dev/null
+            fi
+          fi
+        fi
+
+        exit "$status"

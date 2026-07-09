@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.9
+
+- Added `comment: true` support to the GitHub Action for posting or updating PR comments.
+- Documented pull request comment permissions and refreshed the supported scope list.
+
 ## 0.1.8
 
 - Added `--baseline` support for ignoring duplicate groups present in a previous JSON report.

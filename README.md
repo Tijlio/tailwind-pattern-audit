@@ -51,20 +51,24 @@ console.log(formatReport(report, "markdown"));
 ## GitHub Action
 
 ```yaml
-- uses: Tijlio/tailwind-pattern-audit@v0.1.8
+permissions:
+  contents: read
+  pull-requests: write
+
+- uses: Tijlio/tailwind-pattern-audit@v0.1.9
   with:
-    format: markdown
-    output: tailwind-audit.md
+    format: pr
+    comment: true
     fail-on: duplicates
     max-groups: 0
     hide-layout-only: true
     baseline: tailwind-audit-baseline.json
     similar: true
     min-similarity: 0.7
-    node-version: 22
+    node-version: 24
 ```
 
-Use `format: pr` for compact Markdown intended for PR comments.
+Use `comment: true` with `format: pr` to post or update a compact pull request comment.
 
 ## Release
 
@@ -88,12 +92,16 @@ Supported in this release:
 - static branches in JSX conditional class expressions
 - combined static arguments passed to `cn`, `clsx`, `classnames`, and `twMerge`
 - deterministic `cva` base, variant, and compound-variant class candidates
-- `.js`, `.jsx`, `.ts`, and `.tsx`
+- static `class` attributes in `.html`, `.astro`, `.vue`, and `.svelte`
+- static Astro `class:list` values
+- `.js`, `.jsx`, `.ts`, `.tsx`, `.html`, `.astro`, `.vue`, and `.svelte`
+- opt-in similar class set detection
+- baseline filtering for CI adoption
 
 Deferred but planned:
 
-- Vue, Svelte, Astro, and HTML extractors
-- similarity detection and CVA opportunity scoring
+- richer Vue and Svelte dynamic class binding extraction
+- CVA opportunity scoring
 - JSX subtree pattern detection
 - VS Code integration
 - AI-assisted interpretation and codemods

@@ -36,7 +36,9 @@ program
 
 program
   .name("tailwind-pattern-audit")
-  .description("Find repeated Tailwind class patterns in JavaScript and TypeScript projects.")
+  .description(
+    "Find repeated Tailwind class patterns in JavaScript, TypeScript, HTML, Astro, Vue, and Svelte projects.",
+  )
   .version(TOOL_VERSION)
   .option("--cwd <path>", "Project directory to scan.", process.cwd())
   .option("--include <glob...>", "Glob pattern(s) to include.")
