@@ -49,6 +49,17 @@ describe("config validation", () => {
 
     await expect(analyzeProject({ cwd })).rejects.toThrow(/"failOn" must be an array/);
   });
+
+  it("rejects invalid recommendation filters from config", async () => {
+    const cwd = await createTempProject({
+      "tailwind-pattern-audit.config.json": JSON.stringify({
+        priority: ["urgent"],
+        kind: ["component"],
+      }),
+    });
+
+    await expect(analyzeProject({ cwd })).rejects.toThrow(/"priority" must be an array/);
+  });
 });
 
 async function createTempProject(files: Record<string, string> = {}): Promise<string> {

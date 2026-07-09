@@ -8,6 +8,8 @@ export function generateMarkdown(report: AuditReport): string {
     `- Scanned files: ${report.scannedFiles}`,
     `- Static class occurrences: ${report.occurrences}`,
     `- Duplicate groups: ${report.groups.length}`,
+    `- Priority summary: ${summarizePriorities(report)}`,
+    `- Kind summary: ${summarizeKinds(report)}`,
     `- Duration: ${report.durationMs}ms`,
     "",
   ];
@@ -40,6 +42,30 @@ export function generateMarkdown(report: AuditReport): string {
   }
 
   return `${lines.join("\n").trimEnd()}\n`;
+}
+
+function summarizePriorities(report: AuditReport): string {
+  return [
+    `high ${countBy(report, "priority", "high")}`,
+    `medium ${countBy(report, "priority", "medium")}`,
+    `low ${countBy(report, "priority", "low")}`,
+  ].join(", ");
+}
+
+function summarizeKinds(report: AuditReport): string {
+  return [
+    `component ${countBy(report, "kind", "component")}`,
+    `utility ${countBy(report, "kind", "utility")}`,
+    `cva ${countBy(report, "kind", "cva")}`,
+  ].join(", ");
+}
+
+function countBy(
+  report: AuditReport,
+  property: "kind" | "priority",
+  value: DuplicateClassGroup["recommendation"]["kind" | "priority"],
+): number {
+  return report.groups.filter((group) => group.recommendation[property] === value).length;
 }
 
 function formatGroup(group: DuplicateClassGroup): string[] {

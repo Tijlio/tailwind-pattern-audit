@@ -10,6 +10,8 @@ export interface AnalyzeProjectOptions {
   minOccurrences?: number;
   minClasses?: number;
   functions?: string[];
+  priority?: RecommendationPriority[];
+  kind?: RecommendationKind[];
   configFile?: string | false;
   failOn?: FailOnCondition[];
   maxGroups?: number;
@@ -27,6 +29,8 @@ export interface ResolvedAnalyzeOptions {
   minOccurrences: number;
   minClasses: number;
   functions: string[];
+  priority: RecommendationPriority[];
+  kind: RecommendationKind[];
   configFile: string | false | undefined;
   failOn: FailOnCondition[];
   maxGroups?: number;

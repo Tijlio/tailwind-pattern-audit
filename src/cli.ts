@@ -7,11 +7,32 @@ import { Command } from "commander";
 import { analyzeResolvedProject } from "./analyze.js";
 import { resolveOptions } from "./config.js";
 import { evaluateCiGate } from "./gate.js";
+import { initConfig } from "./init-config.js";
 import { formatReport } from "./reporters/index.js";
-import type { FailOnCondition, ReportFormat } from "./types.js";
+import type {
+  FailOnCondition,
+  RecommendationKind,
+  RecommendationPriority,
+  ReportFormat,
+} from "./types.js";
 import { TOOL_VERSION } from "./version.js";
 
 const program = new Command();
+
+program
+  .command("init")
+  .description("Create a Tailwind Pattern Audit config file.")
+  .option("--cwd <path>", "Project directory for the config file.")
+  .option("--force", "Overwrite an existing config file.")
+  .action(async (options: InitCliOptions) => {
+    const rootOptions = program.opts<CliOptions>();
+    const result = await initConfig({
+      cwd: options.cwd ?? rootOptions.cwd,
+      force: options.force,
+    });
+
+    process.stdout.write(`Created ${result.filePath}\n`);
+  });
 
 program
   .name("tailwind-pattern-audit")
@@ -27,6 +48,8 @@ program
     parseInteger,
   )
   .option("--functions <name...>", "Helper function names to scan for static class arguments.")
+  .option("--priority <priority...>", "Only include recommendation priorities: high, medium, low.")
+  .option("--kind <kind...>", "Only include recommendation kinds: component, utility, cva.")
   .option("--format <format>", "Output format: terminal, json, or markdown.", "terminal")
   .option("--json", "Shortcut for --format json.")
   .option("--markdown", "Shortcut for --format markdown.")
@@ -57,6 +80,8 @@ program
       minOccurrences: options.minOccurrences,
       minClasses: options.minClasses,
       functions: options.functions,
+      priority: options.priority,
+      kind: options.kind,
       configFile: resolveConfigFileOption(options),
       failOn: options.failOn,
       maxGroups: options.maxGroups,
@@ -105,6 +130,8 @@ interface CliOptions {
   minOccurrences?: number;
   minClasses?: number;
   functions?: string[];
+  priority?: RecommendationPriority[];
+  kind?: RecommendationKind[];
   format: string;
   json?: boolean;
   markdown?: boolean;
@@ -114,6 +141,11 @@ interface CliOptions {
   maxGroups?: number;
   maxOccurrences?: number;
   quiet?: boolean;
+}
+
+interface InitCliOptions {
+  cwd?: string;
+  force?: boolean;
 }
 
 function parseInteger(value: string): number {

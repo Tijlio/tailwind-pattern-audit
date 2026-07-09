@@ -123,11 +123,23 @@ function buildDuplicateGroups(
       rawValues: buildRawValues(groupOccurrences),
       recommendation: buildRecommendation(groupOccurrences),
     }))
+    .filter((group) => matchesRecommendationFilters(group, options))
     .sort(compareGroups)
     .map((group, index) => ({
       id: `twpa-${String(index + 1).padStart(3, "0")}`,
       ...group,
     }));
+}
+
+function matchesRecommendationFilters(
+  group: Omit<DuplicateClassGroup, "id">,
+  options: ResolvedAnalyzeOptions,
+): boolean {
+  const priorityMatches =
+    options.priority.length === 0 || options.priority.includes(group.recommendation.priority);
+  const kindMatches = options.kind.length === 0 || options.kind.includes(group.recommendation.kind);
+
+  return priorityMatches && kindMatches;
 }
 
 function buildRecommendation(occurrences: ClassOccurrence[]): DuplicateClassRecommendation {

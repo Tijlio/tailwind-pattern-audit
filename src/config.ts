@@ -3,7 +3,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { AnalyzeProjectOptions, FailOnCondition, ResolvedAnalyzeOptions } from "./types.js";
+import type {
+  AnalyzeProjectOptions,
+  FailOnCondition,
+  RecommendationKind,
+  RecommendationPriority,
+  ResolvedAnalyzeOptions,
+} from "./types.js";
 
 export const DEFAULT_INCLUDE = ["**/*.{js,jsx,ts,tsx}"];
 
@@ -34,6 +40,8 @@ const CONFIG_KEYS = new Set([
   "minOccurrences",
   "minClasses",
   "functions",
+  "priority",
+  "kind",
   "failOn",
   "maxGroups",
   "maxOccurrences",
@@ -44,6 +52,8 @@ const FAIL_ON_CONDITIONS = new Set<FailOnCondition>([
   "warnings",
   "errors",
 ]);
+const RECOMMENDATION_PRIORITIES = new Set<RecommendationPriority>(["high", "medium", "low"]);
+const RECOMMENDATION_KINDS = new Set<RecommendationKind>(["component", "cva", "utility"]);
 
 export class ConfigValidationError extends Error {
   constructor(message: string) {
@@ -62,6 +72,8 @@ export async function resolveOptions(
   const minOccurrences = options.minOccurrences ?? config.minOccurrences ?? 2;
   const minClasses = options.minClasses ?? config.minClasses ?? 3;
   const functions = options.functions ?? config.functions ?? DEFAULT_FUNCTIONS;
+  const priority = options.priority ?? config.priority ?? [];
+  const kind = options.kind ?? config.kind ?? [];
   const failOn = options.failOn ?? config.failOn ?? [];
   const maxGroups = options.maxGroups ?? config.maxGroups;
   const maxOccurrences = options.maxOccurrences ?? config.maxOccurrences;
@@ -73,6 +85,8 @@ export async function resolveOptions(
     minOccurrences,
     minClasses,
     functions,
+    priority,
+    kind,
     configFile: options.configFile,
     failOn,
     maxGroups,
@@ -145,6 +159,8 @@ function validateConfigShape(config: unknown, source: string): ConfigShape {
     minOccurrences: validateOptionalPositiveInteger(input.minOccurrences, "minOccurrences", source),
     minClasses: validateOptionalPositiveInteger(input.minClasses, "minClasses", source),
     functions: validateOptionalStringArray(input.functions, "functions", source),
+    priority: validateOptionalRecommendationPriority(input.priority, source),
+    kind: validateOptionalRecommendationKind(input.kind, source),
     failOn: validateOptionalFailOn(input.failOn, source),
     maxGroups: validateOptionalNonNegativeInteger(input.maxGroups, "maxGroups", source),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -163,6 +179,8 @@ function validateResolvedOptions(options: ResolvedAnalyzeOptions): ResolvedAnaly
     minOccurrences: validatePositiveInteger(options.minOccurrences, "minOccurrences", "options"),
     minClasses: validatePositiveInteger(options.minClasses, "minClasses", "options"),
     functions: validateStringArray(options.functions, "functions", "options"),
+    priority: validateRecommendationPriority(options.priority, "options"),
+    kind: validateRecommendationKind(options.kind, "options"),
     failOn: validateFailOn(options.failOn, "options"),
     maxGroups: validateOptionalNonNegativeInteger(options.maxGroups, "maxGroups", "options"),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -238,6 +256,59 @@ function validateOptionalFailOn(value: unknown, source: string): FailOnCondition
   }
 
   return validateFailOn(value, source);
+}
+
+function validateOptionalRecommendationPriority(
+  value: unknown,
+  source: string,
+): RecommendationPriority[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return validateRecommendationPriority(value, source);
+}
+
+function validateRecommendationPriority(value: unknown, source: string): RecommendationPriority[] {
+  if (
+    !Array.isArray(value) ||
+    value.some(
+      (item) =>
+        typeof item !== "string" || !RECOMMENDATION_PRIORITIES.has(item as RecommendationPriority),
+    )
+  ) {
+    throw new ConfigValidationError(
+      `${source}: "priority" must be an array containing high, medium, or low.`,
+    );
+  }
+
+  return Array.from(new Set(value)) as RecommendationPriority[];
+}
+
+function validateOptionalRecommendationKind(
+  value: unknown,
+  source: string,
+): RecommendationKind[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return validateRecommendationKind(value, source);
+}
+
+function validateRecommendationKind(value: unknown, source: string): RecommendationKind[] {
+  if (
+    !Array.isArray(value) ||
+    value.some(
+      (item) => typeof item !== "string" || !RECOMMENDATION_KINDS.has(item as RecommendationKind),
+    )
+  ) {
+    throw new ConfigValidationError(
+      `${source}: "kind" must be an array containing component, cva, or utility.`,
+    );
+  }
+
+  return Array.from(new Set(value)) as RecommendationKind[];
 }
 
 function validateFailOn(value: unknown, source: string): FailOnCondition[] {

@@ -1,4 +1,5 @@
-import { readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -42,6 +43,38 @@ describe("CLI", () => {
     } finally {
       await rm(outputPath, { force: true });
     }
+  });
+
+  it("initializes a config file", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "twpa-cli-"));
+
+    try {
+      const result = await runCli(["init", "--cwd", cwd]);
+      const configPath = path.join(cwd, "tailwind-pattern-audit.config.json");
+      const config = JSON.parse(await readFile(configPath, "utf8")) as {
+        minClasses?: number;
+        include?: unknown[];
+      };
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Created");
+      expect(result.stderr).toBe("");
+      expect(config.minClasses).toBe(4);
+      expect(config.include?.length).toBeGreaterThan(0);
+    } finally {
+      await rm(cwd, { force: true, recursive: true });
+    }
+  });
+
+  it("filters reports by recommendation kind", async () => {
+    const result = await runCli(["--cwd", fixture, "--json", "--kind", "cva"]);
+    const report = JSON.parse(result.stdout) as {
+      groups: Array<{ recommendation: { kind: string } }>;
+    };
+
+    expect(result.exitCode).toBe(0);
+    expect(report.groups.length).toBeGreaterThan(0);
+    expect(report.groups.every((group) => group.recommendation.kind === "cva")).toBe(true);
   });
 
   it("returns a non-zero exit code when CI gate conditions fail", async () => {

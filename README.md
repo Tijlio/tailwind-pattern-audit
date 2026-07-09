@@ -16,13 +16,19 @@ line references, and JSON/Markdown output that other tools can consume.
 
 ```bash
 tailwind-pattern-audit
+tailwind-pattern-audit init
 tailwind-pattern-audit --json
 tailwind-pattern-audit --markdown
 tailwind-pattern-audit --min-occurrences 3
 tailwind-pattern-audit --min-classes 4
+tailwind-pattern-audit --priority high medium
+tailwind-pattern-audit --kind component cva
 tailwind-pattern-audit --include "src/**/*.{ts,tsx}"
 tailwind-pattern-audit --fail-on duplicates --max-groups 0
 ```
+
+`tailwind-pattern-audit init` creates a practical `tailwind-pattern-audit.config.json` with
+focused source globs and `minClasses: 4` for quieter first-run reports.
 
 ## Library
 
@@ -36,7 +42,7 @@ console.log(formatReport(report, "markdown"));
 ## GitHub Action
 
 ```yaml
-- uses: Tijlio/tailwind-pattern-audit@v0
+- uses: Tijlio/tailwind-pattern-audit@v0.1.0
   with:
     format: markdown
     output: tailwind-audit.md
@@ -44,6 +50,10 @@ console.log(formatReport(report, "markdown"));
     max-groups: 0
     node-version: 22
 ```
+
+Release publishing is handled by `.github/workflows/release.yml` on `v*.*.*` tags. Configure
+the package's npm trusted publisher to use this repository and workflow before relying on CI
+publishes.
 
 ## Scope
 

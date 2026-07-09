@@ -23,6 +23,12 @@ inputs:
   min-classes:
     description: Minimum class count required for a class string.
     required: false
+  priority:
+    description: "Space-separated recommendation priorities to include: high, medium, low."
+    required: false
+  kind:
+    description: "Space-separated recommendation kinds to include: component, utility, cva."
+    required: false
   format:
     description: "Output format: terminal, json, or markdown."
     required: false
@@ -78,6 +84,14 @@ runs:
 
         if [ -n "${{ inputs.min-classes }}" ]; then
           args+=(--min-classes "${{ inputs.min-classes }}")
+        fi
+
+        if [ -n "${{ inputs.priority }}" ]; then
+          args+=(--priority ${{ inputs.priority }})
+        fi
+
+        if [ -n "${{ inputs.kind }}" ]; then
+          args+=(--kind ${{ inputs.kind }})
         fi
 
         if [ -n "${{ inputs.output }}" ]; then
