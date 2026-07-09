@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- Updated bundled GitHub Actions dependencies to current Node 24-based major versions.
+
 ## 0.1.5
 
 - Added static Astro `class:list` extraction for string, array, object, logical, and conditional values.
