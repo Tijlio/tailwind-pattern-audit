@@ -45,7 +45,7 @@ inputs:
     description: Previous JSON report whose duplicate groups should be ignored.
     required: false
   format:
-    description: "Output format: terminal, json, markdown, or pr."
+    description: "Output format: terminal, json, markdown, pr, or github."
     required: false
     default: "terminal"
   output:
@@ -55,6 +55,14 @@ inputs:
     description: Post or update a pull request comment with the report.
     required: false
     default: "false"
+  annotations:
+    description: Emit GitHub workflow annotations for duplicate groups and diagnostics.
+    required: false
+    default: "false"
+  annotation-limit:
+    description: Maximum duplicate group annotations to emit.
+    required: false
+    default: "50"
   fail-on:
     description: "Space-separated failure conditions: duplicates, diagnostics, warnings, errors."
     required: false
@@ -140,6 +148,17 @@ runs:
           args+=(--baseline "${{ inputs.baseline }}")
         fi
 
+        annotation_args=("${args[@]}")
+        annotation_args[3]="github"
+
+        if [ -n "${{ inputs.annotation-limit }}" ]; then
+          annotation_args+=(--annotation-limit "${{ inputs.annotation-limit }}")
+
+          if [ "${{ inputs.format }}" = "github" ]; then
+            args+=(--annotation-limit "${{ inputs.annotation-limit }}")
+          fi
+        fi
+
         if [ -n "${{ inputs.output }}" ]; then
           args+=(--output "${{ inputs.output }}")
         fi
@@ -189,6 +208,17 @@ runs:
             else
               gh api -X POST "$comments_endpoint" -f body="$(cat "$body_file")" >/dev/null
             fi
+          fi
+        fi
+
+        if [ "${{ inputs.annotations }}" = "true" ]; then
+          set +e
+          npx --yes "tailwind-pattern-audit@${{ inputs.version }}" "${annotation_args[@]}"
+          annotation_status=$?
+          set -e
+
+          if [ "$annotation_status" -ne 0 ]; then
+            echo "::warning::annotations input is true, but annotation generation failed."
           fi
         fi
 

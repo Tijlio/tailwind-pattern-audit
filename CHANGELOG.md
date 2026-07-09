@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.13
+
+- Added `--format github` for GitHub workflow annotation output.
+- Added `--github` and `--annotation-limit` CLI options.
+- Added `annotations` and `annotation-limit` inputs to the GitHub Action.
+
 ## 0.1.12
 
 - Added a published JSON schema for `tailwind-pattern-audit.config.json`.

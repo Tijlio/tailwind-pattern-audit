@@ -93,6 +93,16 @@ describe("CLI", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("prints GitHub workflow annotations", async () => {
+    const result = await runCli(["--cwd", fixture, "--github", "--annotation-limit", "1"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("::warning file=");
+    expect(result.stdout).toContain("Tailwind Pattern Audit twpa-001");
+    expect(result.stdout).toContain("Showing 1 of");
+    expect(result.stderr).toBe("");
+  });
+
   it("prints similar groups in JSON reports when enabled", async () => {
     const result = await runCli([
       "--cwd",

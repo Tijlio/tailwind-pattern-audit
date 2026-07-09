@@ -30,6 +30,7 @@ tailwind-pattern-audit --kind component cva
 tailwind-pattern-audit --hide-layout-only
 tailwind-pattern-audit --similar --min-similarity 0.7
 tailwind-pattern-audit --format pr
+tailwind-pattern-audit --format github --annotation-limit 25
 tailwind-pattern-audit --include "src/**/*.{ts,tsx}"
 tailwind-pattern-audit --json --output tailwind-audit-baseline.json
 tailwind-pattern-audit --baseline tailwind-audit-baseline.json --fail-on duplicates
@@ -56,10 +57,12 @@ permissions:
   contents: read
   pull-requests: write
 
-- uses: Tijlio/tailwind-pattern-audit@v0.1.12
+- uses: Tijlio/tailwind-pattern-audit@v0.1.13
   with:
     format: pr
     comment: true
+    annotations: true
+    annotation-limit: 25
     fail-on: duplicates
     max-groups: 0
     hide-layout-only: true
@@ -70,6 +73,8 @@ permissions:
 ```
 
 Use `comment: true` with `format: pr` to post or update a compact pull request comment.
+Use `annotations: true` to add duplicate groups and warning/error diagnostics to the GitHub
+Checks UI.
 
 ## Inline Ignores
 
@@ -116,6 +121,7 @@ Supported in this release:
 - baseline filtering for CI adoption
 - inline ignore comments for intentional duplicates
 - JSON schema for `tailwind-pattern-audit.config.json`
+- GitHub workflow annotation output
 
 Deferred but planned:
 

@@ -17,8 +17,9 @@ const FORMAT_SHORTCUTS = [
   ["json", "json"],
   ["markdown", "markdown"],
   ["pr", "pr"],
+  ["github", "github"],
 ] as const;
-const REPORT_FORMATS = new Set<string>(["terminal", "json", "markdown", "pr"]);
+const REPORT_FORMATS = new Set<string>(["terminal", "json", "markdown", "pr", "github"]);
 
 program
   .command("init")
@@ -66,10 +67,20 @@ program
     parseNonNegativeInteger,
   )
   .option("--baseline <path>", "Ignore duplicate groups present in a previous JSON report.")
-  .option("--format <format>", "Output format: terminal, json, markdown, or pr.", "terminal")
+  .option(
+    "--format <format>",
+    "Output format: terminal, json, markdown, pr, or github.",
+    "terminal",
+  )
   .option("--json", "Shortcut for --format json.")
   .option("--markdown", "Shortcut for --format markdown.")
   .option("--pr", "Shortcut for --format pr.")
+  .option("--github", "Shortcut for --format github.")
+  .option(
+    "--annotation-limit <number>",
+    "Maximum duplicate group annotations for --format github.",
+    parseNonNegativeInteger,
+  )
   .option("--output <path>", "Write report to a file instead of stdout.")
   .option("--config <path>", "Path to a config file.")
   .option("--no-config", "Disable config file discovery.")
@@ -111,7 +122,9 @@ program
     };
     const resolvedOptions = await resolveOptions(analyzeOptions);
     const report = await analyzeResolvedProject(resolvedOptions);
-    const output = formatReport(report, format);
+    const output = formatReport(report, format, {
+      annotationLimit: options.annotationLimit,
+    });
     const gate = evaluateCiGate(report, resolvedOptions);
 
     if (options.output) {
@@ -150,6 +163,8 @@ interface CliOptions extends Omit<AnalyzeProjectOptions, "configFile"> {
   json?: boolean;
   markdown?: boolean;
   pr?: boolean;
+  github?: boolean;
+  annotationLimit?: number;
   output?: string;
   config?: string | boolean;
   quiet?: boolean;
@@ -202,7 +217,7 @@ function resolveFormat(options: CliOptions): ReportFormat {
   }
 
   throw new Error(
-    `Unsupported format "${options.format}". Expected terminal, json, markdown, or pr.`,
+    `Unsupported format "${options.format}". Expected terminal, json, markdown, pr, or github.`,
   );
 }
 

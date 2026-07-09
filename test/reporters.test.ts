@@ -10,7 +10,24 @@ describe("formatReport", () => {
     scannedFiles: 2,
     occurrences: 2,
     durationMs: 12,
-    diagnostics: [],
+    diagnostics: [
+      {
+        severity: "warning",
+        code: "parse_recovered",
+        message: "Recovered parse issue\nwith details.",
+        filePath: "src/B.tsx",
+        line: 10,
+        column: 4,
+      },
+      {
+        severity: "info",
+        code: "dynamic_classname_skipped",
+        message: "Skipped dynamic className expression.",
+        filePath: "src/C.tsx",
+        line: 12,
+        column: 6,
+      },
+    ],
     groups: [
       {
         id: "twpa-001",
@@ -149,5 +166,19 @@ describe("formatReport", () => {
     expect(pr).toContain("### Similar Candidates");
     expect(pr).toContain("| `twpa-001` | medium | component | 2 | 4 |");
     expect(pr).not.toContain("src/A.tsx:3:18");
+  });
+
+  it("formats GitHub workflow annotations", () => {
+    const github = formatReport(report, "github", { annotationLimit: 1 });
+
+    expect(github).toContain(
+      "::warning file=src/A.tsx,line=3,col=18,title=Tailwind Pattern Audit twpa-001::",
+    );
+    expect(github).toContain("Repeated Tailwind class pattern appears 2 times.");
+    expect(github).toContain("Pattern: px-4 py-2 text-sm font-medium");
+    expect(github).toContain(
+      "::warning file=src/B.tsx,line=10,col=4,title=Tailwind Pattern Audit parse_recovered::Recovered parse issue%0Awith details.",
+    );
+    expect(github).not.toContain("dynamic_classname_skipped");
   });
 });

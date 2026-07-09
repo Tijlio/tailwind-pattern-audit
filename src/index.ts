@@ -5,6 +5,7 @@ export type { InitConfigOptions, InitConfigResult } from "./init-config.js";
 export { AUDIT_REPORT_SCHEMA } from "./report-schema.js";
 export {
   formatReport,
+  generateGithubAnnotations,
   generateJson,
   generateMarkdown,
   generatePr,
@@ -21,6 +22,7 @@ export type {
   FailOnCondition,
   GateResult,
   ReportFormat,
+  ReportFormatOptions,
   SimilarClassCandidate,
   SimilarClassGroup,
 } from "./types.js";

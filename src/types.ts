@@ -1,7 +1,11 @@
-export type ReportFormat = "terminal" | "json" | "markdown" | "pr";
+export type ReportFormat = "terminal" | "json" | "markdown" | "pr" | "github";
 export type FailOnCondition = "duplicates" | "diagnostics" | "warnings" | "errors";
 export type RecommendationKind = "component" | "cva" | "utility";
 export type RecommendationPriority = "high" | "medium" | "low";
+
+export interface ReportFormatOptions {
+  annotationLimit?: number;
+}
 
 export interface AnalyzeProjectOptions {
   cwd?: string;
