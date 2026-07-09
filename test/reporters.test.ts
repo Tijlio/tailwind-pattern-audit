@@ -86,4 +86,13 @@ describe("formatReport", () => {
     expect(terminal).toContain("twpa-001: 2 occurrences, 4 classes");
     expect(terminal).toContain("recommendation: medium component");
   });
+
+  it("formats PR output without full evidence tables", () => {
+    const pr = formatReport(report, "pr");
+
+    expect(pr).toContain("## Tailwind Pattern Audit");
+    expect(pr).toContain("### Top Candidates");
+    expect(pr).toContain("| `twpa-001` | medium | component | 2 | 4 |");
+    expect(pr).not.toContain("src/A.tsx:3:18");
+  });
 });

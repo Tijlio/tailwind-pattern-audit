@@ -1,4 +1,4 @@
-export type ReportFormat = "terminal" | "json" | "markdown";
+export type ReportFormat = "terminal" | "json" | "markdown" | "pr";
 export type FailOnCondition = "duplicates" | "diagnostics" | "warnings" | "errors";
 export type RecommendationKind = "component" | "cva" | "utility";
 export type RecommendationPriority = "high" | "medium" | "low";
@@ -12,6 +12,7 @@ export interface AnalyzeProjectOptions {
   functions?: string[];
   priority?: RecommendationPriority[];
   kind?: RecommendationKind[];
+  hideLayoutOnly?: boolean;
   configFile?: string | false;
   failOn?: FailOnCondition[];
   maxGroups?: number;
@@ -31,6 +32,7 @@ export interface ResolvedAnalyzeOptions {
   functions: string[];
   priority: RecommendationPriority[];
   kind: RecommendationKind[];
+  hideLayoutOnly: boolean;
   configFile: string | false | undefined;
   failOn: FailOnCondition[];
   maxGroups?: number;

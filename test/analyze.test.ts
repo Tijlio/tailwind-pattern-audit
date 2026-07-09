@@ -165,6 +165,36 @@ describe("analyzeFiles", () => {
       }),
     );
   });
+
+  it("can hide duplicate groups made only of layout primitives", async () => {
+    const fixture = await createFixture({
+      "src/One.tsx": `
+        export function One() {
+          return (
+            <>
+              <div className="flex items-center justify-between gap-2" />
+              <button className="rounded-md border bg-white p-4" />
+            </>
+          );
+        }
+      `,
+      "src/Two.tsx": `
+        export function Two() {
+          return (
+            <>
+              <section className="gap-2 flex justify-between items-center" />
+              <a className="p-4 bg-white border rounded-md" />
+            </>
+          );
+        }
+      `,
+    });
+
+    const report = await analyzeProject({ cwd: fixture, hideLayoutOnly: true });
+
+    expect(report.groups).toHaveLength(1);
+    expect(report.groups[0]?.normalized).toBe("bg-white border p-4 rounded-md");
+  });
 });
 
 async function createFixture(files: Record<string, string>): Promise<string> {

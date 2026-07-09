@@ -33,6 +33,7 @@ const DEFAULT_INIT_CONFIG = {
   minOccurrences: 2,
   minClasses: 4,
   priority: ["high", "medium"],
+  hideLayoutOnly: true,
   functions: DEFAULT_FUNCTIONS,
 } satisfies AnalyzeProjectOptions;
 

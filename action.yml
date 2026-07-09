@@ -29,8 +29,11 @@ inputs:
   kind:
     description: "Space-separated recommendation kinds to include: component, utility, cva."
     required: false
+  hide-layout-only:
+    description: Hide groups made only of layout primitives.
+    required: false
   format:
-    description: "Output format: terminal, json, or markdown."
+    description: "Output format: terminal, json, markdown, or pr."
     required: false
     default: "terminal"
   output:
@@ -92,6 +95,10 @@ runs:
 
         if [ -n "${{ inputs.kind }}" ]; then
           args+=(--kind ${{ inputs.kind }})
+        fi
+
+        if [ "${{ inputs.hide-layout-only }}" = "true" ]; then
+          args+=(--hide-layout-only)
         fi
 
         if [ -n "${{ inputs.output }}" ]; then

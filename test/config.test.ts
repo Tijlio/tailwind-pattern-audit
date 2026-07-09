@@ -60,6 +60,16 @@ describe("config validation", () => {
 
     await expect(analyzeProject({ cwd })).rejects.toThrow(/"priority" must be an array/);
   });
+
+  it("rejects invalid boolean options from config", async () => {
+    const cwd = await createTempProject({
+      "tailwind-pattern-audit.config.json": JSON.stringify({
+        hideLayoutOnly: "yes",
+      }),
+    });
+
+    await expect(analyzeProject({ cwd })).rejects.toThrow(/"hideLayoutOnly" must be a boolean/);
+  });
 });
 
 async function createTempProject(files: Record<string, string> = {}): Promise<string> {

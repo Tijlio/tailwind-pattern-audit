@@ -50,9 +50,11 @@ program
   .option("--functions <name...>", "Helper function names to scan for static class arguments.")
   .option("--priority <priority...>", "Only include recommendation priorities: high, medium, low.")
   .option("--kind <kind...>", "Only include recommendation kinds: component, utility, cva.")
-  .option("--format <format>", "Output format: terminal, json, or markdown.", "terminal")
+  .option("--hide-layout-only", "Hide groups made only of layout primitives.")
+  .option("--format <format>", "Output format: terminal, json, markdown, or pr.", "terminal")
   .option("--json", "Shortcut for --format json.")
   .option("--markdown", "Shortcut for --format markdown.")
+  .option("--pr", "Shortcut for --format pr.")
   .option("--output <path>", "Write report to a file instead of stdout.")
   .option("--config <path>", "Path to a config file.")
   .option("--no-config", "Disable config file discovery.")
@@ -82,6 +84,7 @@ program
       functions: options.functions,
       priority: options.priority,
       kind: options.kind,
+      hideLayoutOnly: options.hideLayoutOnly,
       configFile: resolveConfigFileOption(options),
       failOn: options.failOn,
       maxGroups: options.maxGroups,
@@ -132,9 +135,11 @@ interface CliOptions {
   functions?: string[];
   priority?: RecommendationPriority[];
   kind?: RecommendationKind[];
+  hideLayoutOnly?: boolean;
   format: string;
   json?: boolean;
   markdown?: boolean;
+  pr?: boolean;
   output?: string;
   config?: string | boolean;
   failOn?: FailOnCondition[];
@@ -177,11 +182,22 @@ function resolveFormat(options: CliOptions): ReportFormat {
     return "markdown";
   }
 
-  if (options.format === "terminal" || options.format === "json" || options.format === "markdown") {
+  if (options.pr) {
+    return "pr";
+  }
+
+  if (
+    options.format === "terminal" ||
+    options.format === "json" ||
+    options.format === "markdown" ||
+    options.format === "pr"
+  ) {
     return options.format;
   }
 
-  throw new Error(`Unsupported format "${options.format}". Expected terminal, json, or markdown.`);
+  throw new Error(
+    `Unsupported format "${options.format}". Expected terminal, json, markdown, or pr.`,
+  );
 }
 
 function resolveConfigFileOption(options: CliOptions): string | false | undefined {

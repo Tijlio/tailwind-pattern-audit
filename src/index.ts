@@ -7,6 +7,7 @@ export {
   formatReport,
   generateJson,
   generateMarkdown,
+  generatePr,
   generateTerminal,
 } from "./reporters/index.js";
 export type {

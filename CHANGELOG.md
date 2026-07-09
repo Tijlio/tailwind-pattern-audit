@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added layout-only duplicate filtering with `--hide-layout-only`.
+- Added compact PR-comment report output with `--format pr` and `--pr`.
+- Added release instructions to the README.
+- Made the CLI/report version read from package metadata.
+
 ## 0.1.1
 
 - Added npm trusted-publishing release workflow.

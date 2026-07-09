@@ -13,8 +13,8 @@ pnpm add -D tailwind-pattern-audit
 pnpm tailwind-pattern-audit --format markdown --output tailwind-audit.md
 ```
 
-This first slice focuses on deterministic evidence: duplicate static class strings, file and
-line references, and JSON/Markdown output that other tools can consume.
+The tool focuses on deterministic evidence: duplicate static class strings, file and line
+references, and JSON/Markdown output that other tools can consume.
 
 ## CLI
 
@@ -27,12 +27,14 @@ tailwind-pattern-audit --min-occurrences 3
 tailwind-pattern-audit --min-classes 4
 tailwind-pattern-audit --priority high medium
 tailwind-pattern-audit --kind component cva
+tailwind-pattern-audit --hide-layout-only
+tailwind-pattern-audit --format pr
 tailwind-pattern-audit --include "src/**/*.{ts,tsx}"
 tailwind-pattern-audit --fail-on duplicates --max-groups 0
 ```
 
 `tailwind-pattern-audit init` creates a practical `tailwind-pattern-audit.config.json` with
-focused source globs and `minClasses: 4` for quieter first-run reports.
+focused source globs, `minClasses: 4`, and layout-only filtering for quieter first-run reports.
 
 ## Library
 
@@ -52,12 +54,23 @@ console.log(formatReport(report, "markdown"));
     output: tailwind-audit.md
     fail-on: duplicates
     max-groups: 0
+    hide-layout-only: true
     node-version: 22
 ```
 
-Release publishing is handled by `.github/workflows/release.yml` on `v*.*.*` tags. Configure
-the package's npm trusted publisher to use this repository and workflow before relying on CI
-publishes.
+Use `format: pr` for compact Markdown intended for PR comments.
+
+## Release
+
+After the changelog and release changes are committed, create and push a version tag:
+
+```bash
+pnpm version patch
+git push origin main --follow-tags
+```
+
+`.github/workflows/release.yml` publishes matching `v*.*.*` tags to npm through trusted
+publishing.
 
 ## Scope
 

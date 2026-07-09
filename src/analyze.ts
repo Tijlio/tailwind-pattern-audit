@@ -138,8 +138,175 @@ function matchesRecommendationFilters(
   const priorityMatches =
     options.priority.length === 0 || options.priority.includes(group.recommendation.priority);
   const kindMatches = options.kind.length === 0 || options.kind.includes(group.recommendation.kind);
+  const layoutMatches = !options.hideLayoutOnly || !isLayoutOnlyGroup(group);
 
-  return priorityMatches && kindMatches;
+  return priorityMatches && kindMatches && layoutMatches;
+}
+
+function isLayoutOnlyGroup(group: Omit<DuplicateClassGroup, "id">): boolean {
+  return group.classCount > 0 && group.normalized.split(" ").every(isLayoutToken);
+}
+
+function isLayoutToken(token: string): boolean {
+  const baseToken = normalizeLayoutToken(token);
+
+  return (
+    LAYOUT_EXACT_TOKENS.has(baseToken) ||
+    LAYOUT_TOKEN_PREFIXES.some((prefix) => baseToken.startsWith(prefix))
+  );
+}
+
+const LAYOUT_EXACT_TOKENS = new Set([
+  "absolute",
+  "block",
+  "collapse",
+  "container",
+  "contents",
+  "fixed",
+  "flex",
+  "flex-1",
+  "flex-auto",
+  "flex-col",
+  "flex-col-reverse",
+  "flex-initial",
+  "flex-none",
+  "flex-nowrap",
+  "flex-row",
+  "flex-row-reverse",
+  "flex-wrap",
+  "flex-wrap-reverse",
+  "flow-root",
+  "grid",
+  "grid-flow-col",
+  "grid-flow-col-dense",
+  "grid-flow-dense",
+  "grid-flow-row",
+  "grid-flow-row-dense",
+  "grow",
+  "grow-0",
+  "hidden",
+  "inline",
+  "inline-block",
+  "inline-flex",
+  "inline-grid",
+  "invisible",
+  "isolate",
+  "isolation-auto",
+  "not-sr-only",
+  "relative",
+  "shrink",
+  "shrink-0",
+  "sr-only",
+  "static",
+  "sticky",
+  "visible",
+]);
+
+const LAYOUT_TOKEN_PREFIXES = [
+  "aspect-",
+  "auto-cols-",
+  "auto-rows-",
+  "basis-",
+  "bottom-",
+  "clear-",
+  "col-",
+  "col-end-",
+  "col-span-",
+  "col-start-",
+  "columns-",
+  "content-",
+  "float-",
+  "gap-",
+  "gap-x-",
+  "gap-y-",
+  "grid-cols-",
+  "grid-rows-",
+  "h-",
+  "inset-",
+  "inset-x-",
+  "inset-y-",
+  "items-",
+  "justify-",
+  "left-",
+  "m-",
+  "max-h-",
+  "max-w-",
+  "mb-",
+  "me-",
+  "min-h-",
+  "min-w-",
+  "ml-",
+  "mr-",
+  "ms-",
+  "mt-",
+  "mx-",
+  "my-",
+  "object-",
+  "order-",
+  "overflow-",
+  "overflow-x-",
+  "overflow-y-",
+  "overscroll-",
+  "overscroll-x-",
+  "overscroll-y-",
+  "p-",
+  "pb-",
+  "pe-",
+  "place-",
+  "place-content-",
+  "place-items-",
+  "place-self-",
+  "pl-",
+  "pr-",
+  "ps-",
+  "pt-",
+  "px-",
+  "py-",
+  "right-",
+  "row-",
+  "row-end-",
+  "row-span-",
+  "row-start-",
+  "self-",
+  "size-",
+  "space-x-",
+  "space-y-",
+  "top-",
+  "w-",
+  "z-",
+];
+
+function normalizeLayoutToken(token: string): string {
+  let baseToken = stripVariantPrefix(token);
+
+  if (baseToken.startsWith("!")) {
+    baseToken = baseToken.slice(1);
+  }
+
+  if (baseToken.startsWith("-")) {
+    baseToken = baseToken.slice(1);
+  }
+
+  return baseToken;
+}
+
+function stripVariantPrefix(token: string): string {
+  let bracketDepth = 0;
+  let lastVariantSeparator = -1;
+
+  for (let index = 0; index < token.length; index += 1) {
+    const character = token[index];
+
+    if (character === "[") {
+      bracketDepth += 1;
+    } else if (character === "]") {
+      bracketDepth = Math.max(0, bracketDepth - 1);
+    } else if (character === ":" && bracketDepth === 0) {
+      lastVariantSeparator = index;
+    }
+  }
+
+  return lastVariantSeparator === -1 ? token : token.slice(lastVariantSeparator + 1);
 }
 
 function buildRecommendation(occurrences: ClassOccurrence[]): DuplicateClassRecommendation {

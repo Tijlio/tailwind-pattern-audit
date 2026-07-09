@@ -42,6 +42,7 @@ const CONFIG_KEYS = new Set([
   "functions",
   "priority",
   "kind",
+  "hideLayoutOnly",
   "failOn",
   "maxGroups",
   "maxOccurrences",
@@ -74,6 +75,7 @@ export async function resolveOptions(
   const functions = options.functions ?? config.functions ?? DEFAULT_FUNCTIONS;
   const priority = options.priority ?? config.priority ?? [];
   const kind = options.kind ?? config.kind ?? [];
+  const hideLayoutOnly = options.hideLayoutOnly ?? config.hideLayoutOnly ?? false;
   const failOn = options.failOn ?? config.failOn ?? [];
   const maxGroups = options.maxGroups ?? config.maxGroups;
   const maxOccurrences = options.maxOccurrences ?? config.maxOccurrences;
@@ -87,6 +89,7 @@ export async function resolveOptions(
     functions,
     priority,
     kind,
+    hideLayoutOnly,
     configFile: options.configFile,
     failOn,
     maxGroups,
@@ -161,6 +164,7 @@ function validateConfigShape(config: unknown, source: string): ConfigShape {
     functions: validateOptionalStringArray(input.functions, "functions", source),
     priority: validateOptionalRecommendationPriority(input.priority, source),
     kind: validateOptionalRecommendationKind(input.kind, source),
+    hideLayoutOnly: validateOptionalBoolean(input.hideLayoutOnly, "hideLayoutOnly", source),
     failOn: validateOptionalFailOn(input.failOn, source),
     maxGroups: validateOptionalNonNegativeInteger(input.maxGroups, "maxGroups", source),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -181,6 +185,7 @@ function validateResolvedOptions(options: ResolvedAnalyzeOptions): ResolvedAnaly
     functions: validateStringArray(options.functions, "functions", "options"),
     priority: validateRecommendationPriority(options.priority, "options"),
     kind: validateRecommendationKind(options.kind, "options"),
+    hideLayoutOnly: validateBoolean(options.hideLayoutOnly, "hideLayoutOnly", "options"),
     failOn: validateFailOn(options.failOn, "options"),
     maxGroups: validateOptionalNonNegativeInteger(options.maxGroups, "maxGroups", "options"),
     maxOccurrences: validateOptionalNonNegativeInteger(
@@ -256,6 +261,26 @@ function validateOptionalFailOn(value: unknown, source: string): FailOnCondition
   }
 
   return validateFailOn(value, source);
+}
+
+function validateOptionalBoolean(
+  value: unknown,
+  name: string,
+  source: string,
+): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return validateBoolean(value, name, source);
+}
+
+function validateBoolean(value: unknown, name: string, source: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new ConfigValidationError(`${source}: "${name}" must be a boolean.`);
+  }
+
+  return value;
 }
 
 function validateOptionalRecommendationPriority(

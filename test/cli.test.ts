@@ -53,6 +53,7 @@ describe("CLI", () => {
       const configPath = path.join(cwd, "tailwind-pattern-audit.config.json");
       const config = JSON.parse(await readFile(configPath, "utf8")) as {
         minClasses?: number;
+        hideLayoutOnly?: boolean;
         include?: unknown[];
       };
 
@@ -60,6 +61,7 @@ describe("CLI", () => {
       expect(result.stdout).toContain("Created");
       expect(result.stderr).toBe("");
       expect(config.minClasses).toBe(4);
+      expect(config.hideLayoutOnly).toBe(true);
       expect(config.include?.length).toBeGreaterThan(0);
     } finally {
       await rm(cwd, { force: true, recursive: true });
@@ -75,6 +77,16 @@ describe("CLI", () => {
     expect(result.exitCode).toBe(0);
     expect(report.groups.length).toBeGreaterThan(0);
     expect(report.groups.every((group) => group.recommendation.kind === "cva")).toBe(true);
+  });
+
+  it("prints compact PR reports", async () => {
+    const result = await runCli(["--cwd", fixture, "--pr"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("## Tailwind Pattern Audit");
+    expect(result.stdout).toContain("### Top Candidates");
+    expect(result.stdout).not.toContain("## Duplicate Groups");
+    expect(result.stderr).toBe("");
   });
 
   it("returns a non-zero exit code when CI gate conditions fail", async () => {
