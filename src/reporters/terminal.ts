@@ -38,6 +38,7 @@ export function generateTerminal(report: AuditReport): string {
 function formatGroup(group: DuplicateClassGroup): string[] {
   const lines = [
     `${group.id}: ${group.occurrenceCount} occurrences, ${group.classCount} classes`,
+    `  recommendation: ${group.recommendation.priority} ${group.recommendation.kind}`,
     `  ${group.rawValues[0]?.value ?? group.normalized}`,
   ];
 

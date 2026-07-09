@@ -18,6 +18,15 @@ describe("formatReport", () => {
         classCount: 4,
         occurrenceCount: 2,
         rawValues: [{ value: "px-4 py-2 text-sm font-medium", count: 2 }],
+        recommendation: {
+          kind: "component",
+          priority: "medium",
+          reason: "Repeated class sets across files are good component extraction candidates.",
+          topFiles: [
+            { filePath: "src/A.tsx", count: 1 },
+            { filePath: "src/B.tsx", count: 1 },
+          ],
+        },
         occurrences: [
           {
             filePath: "src/A.tsx",
@@ -63,6 +72,7 @@ describe("formatReport", () => {
     expect(markdown).toContain("# Tailwind Pattern Audit");
     expect(markdown).toContain("src/A.tsx:3:18");
     expect(markdown).toContain("twpa-001");
+    expect(markdown).toContain("Recommendation: medium component");
   });
 
   it("formats terminal output with a compact summary", () => {
@@ -70,5 +80,6 @@ describe("formatReport", () => {
 
     expect(terminal).toContain("Duplicate groups: 1");
     expect(terminal).toContain("twpa-001: 2 occurrences, 4 classes");
+    expect(terminal).toContain("recommendation: medium component");
   });
 });

@@ -34,7 +34,15 @@ export const AUDIT_REPORT_SCHEMA = {
     duplicateClassGroup: {
       type: "object",
       additionalProperties: false,
-      required: ["id", "normalized", "classCount", "occurrenceCount", "rawValues", "occurrences"],
+      required: [
+        "id",
+        "normalized",
+        "classCount",
+        "occurrenceCount",
+        "rawValues",
+        "recommendation",
+        "occurrences",
+      ],
       properties: {
         id: { type: "string", pattern: "^twpa-[0-9]{3,}$" },
         normalized: { type: "string", minLength: 1 },
@@ -45,11 +53,35 @@ export const AUDIT_REPORT_SCHEMA = {
           minItems: 1,
           items: { $ref: "#/$defs/rawValue" },
         },
+        recommendation: { $ref: "#/$defs/duplicateClassRecommendation" },
         occurrences: {
           type: "array",
           minItems: 2,
           items: { $ref: "#/$defs/classOccurrence" },
         },
+      },
+    },
+    duplicateClassRecommendation: {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "priority", "reason", "topFiles"],
+      properties: {
+        kind: { enum: ["component", "cva", "utility"] },
+        priority: { enum: ["high", "medium", "low"] },
+        reason: { type: "string", minLength: 1 },
+        topFiles: {
+          type: "array",
+          items: { $ref: "#/$defs/topFile" },
+        },
+      },
+    },
+    topFile: {
+      type: "object",
+      additionalProperties: false,
+      required: ["filePath", "count"],
+      properties: {
+        filePath: { type: "string", minLength: 1 },
+        count: { type: "integer", minimum: 1 },
       },
     },
     rawValue: {

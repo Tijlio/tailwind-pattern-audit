@@ -1,5 +1,7 @@
 export type ReportFormat = "terminal" | "json" | "markdown";
 export type FailOnCondition = "duplicates" | "diagnostics" | "warnings" | "errors";
+export type RecommendationKind = "component" | "cva" | "utility";
+export type RecommendationPriority = "high" | "medium" | "low";
 
 export interface AnalyzeProjectOptions {
   cwd?: string;
@@ -74,7 +76,18 @@ export interface DuplicateClassGroup {
     value: string;
     count: number;
   }>;
+  recommendation: DuplicateClassRecommendation;
   occurrences: ClassOccurrence[];
+}
+
+export interface DuplicateClassRecommendation {
+  kind: RecommendationKind;
+  priority: RecommendationPriority;
+  reason: string;
+  topFiles: Array<{
+    filePath: string;
+    count: number;
+  }>;
 }
 
 export interface Diagnostic {

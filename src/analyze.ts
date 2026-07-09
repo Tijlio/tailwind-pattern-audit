@@ -10,6 +10,7 @@ import type {
   AuditReport,
   ClassOccurrence,
   Diagnostic,
+  DuplicateClassRecommendation,
   DuplicateClassGroup,
   Extractor,
   ResolvedAnalyzeOptions,
@@ -120,12 +121,72 @@ function buildDuplicateGroups(
       classCount: groupOccurrences[0]?.tokens.length ?? 0,
       occurrenceCount: groupOccurrences.length,
       rawValues: buildRawValues(groupOccurrences),
+      recommendation: buildRecommendation(groupOccurrences),
     }))
     .sort(compareGroups)
     .map((group, index) => ({
       id: `twpa-${String(index + 1).padStart(3, "0")}`,
       ...group,
     }));
+}
+
+function buildRecommendation(occurrences: ClassOccurrence[]): DuplicateClassRecommendation {
+  const files = new Map<string, number>();
+
+  for (const occurrence of occurrences) {
+    files.set(occurrence.filePath, (files.get(occurrence.filePath) ?? 0) + 1);
+  }
+
+  const topFiles = [...files.entries()]
+    .map(([filePath, count]) => ({ filePath, count }))
+    .sort((a, b) => b.count - a.count || a.filePath.localeCompare(b.filePath))
+    .slice(0, 3);
+  const classCount = occurrences[0]?.tokens.length ?? 0;
+  const sourceNames = new Set(occurrences.map((occurrence) => occurrence.source.name));
+  const fileCount = files.size;
+  const hasCvaSource = [...sourceNames].some((sourceName) => sourceName.startsWith("cva:"));
+  const priority = getRecommendationPriority(occurrences.length, classCount, fileCount);
+
+  if (hasCvaSource) {
+    return {
+      kind: "cva",
+      priority,
+      reason: "Repeated CVA class candidates may belong in shared variant definitions.",
+      topFiles,
+    };
+  }
+
+  if (fileCount > 1 && classCount >= 4) {
+    return {
+      kind: "component",
+      priority,
+      reason: "Repeated class sets across files are good component extraction candidates.",
+      topFiles,
+    };
+  }
+
+  return {
+    kind: "utility",
+    priority,
+    reason: "Repeated class sets in a narrow area may fit a local utility or constant.",
+    topFiles,
+  };
+}
+
+function getRecommendationPriority(
+  occurrenceCount: number,
+  classCount: number,
+  fileCount: number,
+): DuplicateClassRecommendation["priority"] {
+  if (occurrenceCount >= 4 || (occurrenceCount >= 3 && classCount >= 6) || fileCount >= 3) {
+    return "high";
+  }
+
+  if (occurrenceCount >= 3 || classCount >= 5 || fileCount >= 2) {
+    return "medium";
+  }
+
+  return "low";
 }
 
 function buildRawValues(occurrences: ClassOccurrence[]): Array<{ value: string; count: number }> {

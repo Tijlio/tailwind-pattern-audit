@@ -48,6 +48,8 @@ function formatGroup(group: DuplicateClassGroup): string[] {
     "",
     `- Occurrences: ${group.occurrenceCount}`,
     `- Classes: ${group.classCount}`,
+    `- Recommendation: ${group.recommendation.priority} ${group.recommendation.kind}`,
+    `- Reason: ${group.recommendation.reason}`,
     "",
     "```text",
     group.rawValues[0]?.value ?? group.normalized,
@@ -63,6 +65,14 @@ function formatGroup(group: DuplicateClassGroup): string[] {
         occurrence.raw,
       )}\` |`,
     );
+  }
+
+  if (group.recommendation.topFiles.length > 0) {
+    lines.push("", "Top files:");
+
+    for (const topFile of group.recommendation.topFiles) {
+      lines.push(`- ${topFile.filePath} (${topFile.count})`);
+    }
   }
 
   return lines;

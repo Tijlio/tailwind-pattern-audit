@@ -50,6 +50,15 @@ function reportWithDuplicates(): AuditReport {
         classCount: 4,
         occurrenceCount: 2,
         rawValues: [{ value: "px-4 py-2 text-sm font-medium", count: 2 }],
+        recommendation: {
+          kind: "component",
+          priority: "medium",
+          reason: "Repeated class sets across files are good component extraction candidates.",
+          topFiles: [
+            { filePath: "src/A.tsx", count: 1 },
+            { filePath: "src/B.tsx", count: 1 },
+          ],
+        },
         occurrences: [
           {
             filePath: "src/A.tsx",
