@@ -5,6 +5,18 @@
   "type": "module",
   "license": "MIT",
   "author": "Naum",
+  "keywords": [
+    "tailwind",
+    "tailwindcss",
+    "audit",
+    "className",
+    "cli",
+    "react",
+    "nextjs",
+    "shadcn-ui"
+  ],
+  "packageManager": "pnpm@10.33.0",
+  "sideEffects": false,
   "bin": {
     "tailwind-pattern-audit": "./dist/cli.js"
   },
@@ -23,6 +35,9 @@
   ],
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "provenance": true
   },
   "scripts": {
     "build": "tsup",
