@@ -1,0 +1,106 @@
+export const AUDIT_REPORT_SCHEMA = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://tailwind-pattern-audit.dev/schemas/audit-report.schema.json",
+  title: "Tailwind Pattern Audit Report",
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schemaVersion",
+    "toolVersion",
+    "cwd",
+    "scannedFiles",
+    "occurrences",
+    "groups",
+    "diagnostics",
+    "durationMs",
+  ],
+  properties: {
+    schemaVersion: { const: 1 },
+    toolVersion: { type: "string", minLength: 1 },
+    cwd: { type: "string", minLength: 1 },
+    scannedFiles: { type: "integer", minimum: 0 },
+    occurrences: { type: "integer", minimum: 0 },
+    groups: {
+      type: "array",
+      items: { $ref: "#/$defs/duplicateClassGroup" },
+    },
+    diagnostics: {
+      type: "array",
+      items: { $ref: "#/$defs/diagnostic" },
+    },
+    durationMs: { type: "integer", minimum: 0 },
+  },
+  $defs: {
+    duplicateClassGroup: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "normalized", "classCount", "occurrenceCount", "rawValues", "occurrences"],
+      properties: {
+        id: { type: "string", pattern: "^twpa-[0-9]{3,}$" },
+        normalized: { type: "string", minLength: 1 },
+        classCount: { type: "integer", minimum: 1 },
+        occurrenceCount: { type: "integer", minimum: 2 },
+        rawValues: {
+          type: "array",
+          minItems: 1,
+          items: { $ref: "#/$defs/rawValue" },
+        },
+        occurrences: {
+          type: "array",
+          minItems: 2,
+          items: { $ref: "#/$defs/classOccurrence" },
+        },
+      },
+    },
+    rawValue: {
+      type: "object",
+      additionalProperties: false,
+      required: ["value", "count"],
+      properties: {
+        value: { type: "string", minLength: 1 },
+        count: { type: "integer", minimum: 1 },
+      },
+    },
+    classOccurrence: {
+      type: "object",
+      additionalProperties: false,
+      required: ["filePath", "line", "column", "raw", "normalized", "tokens", "source"],
+      properties: {
+        filePath: { type: "string", minLength: 1 },
+        line: { type: "integer", minimum: 1 },
+        column: { type: "integer", minimum: 1 },
+        raw: { type: "string", minLength: 1 },
+        normalized: { type: "string", minLength: 1 },
+        tokens: {
+          type: "array",
+          minItems: 1,
+          items: { type: "string", minLength: 1 },
+        },
+        source: { $ref: "#/$defs/classOccurrenceSource" },
+      },
+    },
+    classOccurrenceSource: {
+      type: "object",
+      additionalProperties: false,
+      required: ["extractor", "kind", "name"],
+      properties: {
+        extractor: { type: "string", minLength: 1 },
+        kind: { enum: ["jsxAttribute", "helperCall"] },
+        name: { type: "string", minLength: 1 },
+      },
+    },
+    diagnostic: {
+      type: "object",
+      additionalProperties: false,
+      required: ["severity", "code", "message"],
+      properties: {
+        severity: { enum: ["info", "warning", "error"] },
+        code: { type: "string", minLength: 1 },
+        message: { type: "string", minLength: 1 },
+        filePath: { type: "string", minLength: 1 },
+        line: { type: "integer", minimum: 1 },
+        column: { type: "integer", minimum: 1 },
+      },
+    },
+  },
+} as const;
