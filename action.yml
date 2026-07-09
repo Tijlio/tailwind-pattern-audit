@@ -1,0 +1,90 @@
+name: Tailwind Pattern Audit
+description: Find repeated Tailwind class patterns in JavaScript and TypeScript projects.
+author: Naum
+
+branding:
+  icon: search
+  color: blue
+
+inputs:
+  cwd:
+    description: Project directory to scan.
+    required: false
+    default: "."
+  include:
+    description: Space-separated glob patterns to include.
+    required: false
+  exclude:
+    description: Space-separated glob patterns to exclude.
+    required: false
+  min-occurrences:
+    description: Minimum duplicate occurrences to report.
+    required: false
+  min-classes:
+    description: Minimum class count required for a class string.
+    required: false
+  format:
+    description: "Output format: terminal, json, or markdown."
+    required: false
+    default: "terminal"
+  output:
+    description: Optional report output path.
+    required: false
+  fail-on:
+    description: "Space-separated failure conditions: duplicates, diagnostics, warnings, errors."
+    required: false
+  max-groups:
+    description: Fail when duplicate group count exceeds this number.
+    required: false
+  max-occurrences:
+    description: Fail when reported duplicate occurrence count exceeds this number.
+    required: false
+  version:
+    description: npm package version or dist tag to run.
+    required: false
+    default: "latest"
+
+runs:
+  using: composite
+  steps:
+    - name: Run audit
+      shell: bash
+      run: |
+        set -euo pipefail
+        set -f
+
+        args=(--cwd "${{ inputs.cwd }}" --format "${{ inputs.format }}")
+
+        if [ -n "${{ inputs.include }}" ]; then
+          args+=(--include ${{ inputs.include }})
+        fi
+
+        if [ -n "${{ inputs.exclude }}" ]; then
+          args+=(--exclude ${{ inputs.exclude }})
+        fi
+
+        if [ -n "${{ inputs.min-occurrences }}" ]; then
+          args+=(--min-occurrences "${{ inputs.min-occurrences }}")
+        fi
+
+        if [ -n "${{ inputs.min-classes }}" ]; then
+          args+=(--min-classes "${{ inputs.min-classes }}")
+        fi
+
+        if [ -n "${{ inputs.output }}" ]; then
+          args+=(--output "${{ inputs.output }}")
+        fi
+
+        if [ -n "${{ inputs.fail-on }}" ]; then
+          args+=(--fail-on ${{ inputs.fail-on }})
+        fi
+
+        if [ -n "${{ inputs.max-groups }}" ]; then
+          args+=(--max-groups "${{ inputs.max-groups }}")
+        fi
+
+        if [ -n "${{ inputs.max-occurrences }}" ]; then
+          args+=(--max-occurrences "${{ inputs.max-occurrences }}")
+        fi
+
+        npx --yes "tailwind-pattern-audit@${{ inputs.version }}" "${args[@]}"

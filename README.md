@@ -30,6 +30,17 @@ const report = await analyzeProject({ cwd: process.cwd() });
 console.log(formatReport(report, "markdown"));
 ```
 
+## GitHub Action
+
+```yaml
+- uses: your-org/tailwind-pattern-audit@v0
+  with:
+    format: markdown
+    output: tailwind-audit.md
+    fail-on: duplicates
+    max-groups: 0
+```
+
 ## Scope
 
 Supported in this release:
