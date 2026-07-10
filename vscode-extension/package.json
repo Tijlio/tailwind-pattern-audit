@@ -5,6 +5,11 @@
   "version": "0.0.0",
   "publisher": "tijlio",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tijlio/tailwind-pattern-audit.git",
+    "directory": "vscode-extension"
+  },
   "engines": {
     "vscode": "^1.95.0"
   },
