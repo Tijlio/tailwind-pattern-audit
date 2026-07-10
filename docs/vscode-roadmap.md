@@ -18,7 +18,7 @@ scanner.
 
 The scaffold lives in `vscode-extension/` and intentionally remains thin:
 
-- default command: `npx --yes tailwind-pattern-audit@latest --json --similar`
+- default runner: bundled `tailwind-pattern-audit` package API
 - report input: documented `schemaVersion: 1` JSON
 - UI surfaces: Explorer Tree View and Problems diagnostics
 - local compile check: `pnpm vscode:compile`

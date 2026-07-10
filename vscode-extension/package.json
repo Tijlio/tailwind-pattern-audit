@@ -47,19 +47,16 @@
       "properties": {
         "tailwindPatternAudit.command": {
           "type": "string",
-          "default": "npx",
-          "description": "Command used to run Tailwind Pattern Audit."
+          "default": "",
+          "description": "Optional command override for running Tailwind Pattern Audit instead of the bundled library."
         },
         "tailwindPatternAudit.args": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "default": [
-            "--yes",
-            "tailwind-pattern-audit@latest"
-          ],
-          "description": "Arguments passed before Tailwind Pattern Audit CLI options."
+          "default": [],
+          "description": "Arguments passed before Tailwind Pattern Audit CLI options when command override is set."
         },
         "tailwindPatternAudit.includeSimilar": {
           "type": "boolean",
@@ -68,5 +65,8 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "tailwind-pattern-audit": "^1.2.1"
   }
 }
