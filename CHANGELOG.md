@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+- Added packaged HTML report documentation and screenshot assets.
+- Added packaged report schema documentation and copy-paste integration examples.
+- Added CI and release smoke checks for generated JSON, HTML, and SARIF reports.
+
 ## 1.2.0
 
 - Added self-contained HTML report output with `--format html` and `--html`.
