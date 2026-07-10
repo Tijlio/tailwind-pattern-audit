@@ -6,12 +6,25 @@ scanner.
 ## Milestones
 
 1. Use the CLI HTML report as the first viewer prototype.
-2. Scaffold a VS Code extension that shells out to `tailwind-pattern-audit --json`.
+2. Scaffold a VS Code extension that shells out to `tailwind-pattern-audit --json`. Done in
+   `vscode-extension/`.
 3. Show duplicate groups, similar groups, and diagnostics in a read-only Tree View.
 4. Open source files at the reported line and column.
 5. Add hovers, decorations, and CodeLens actions for repeated patterns.
 6. Add commands for config validation, baseline creation, and ignore workflows.
 7. Reuse or adapt the HTML report as a VS Code webview.
+
+## MVP Scaffold
+
+The scaffold lives in `vscode-extension/` and intentionally remains thin:
+
+- default command: `npx --yes tailwind-pattern-audit@latest --json --similar`
+- report input: documented `schemaVersion: 1` JSON
+- UI surfaces: Explorer Tree View and Problems diagnostics
+- local compile check: `pnpm vscode:compile`
+
+The extension should remain read-only until the report contract and user workflows are proven in
+real projects.
 
 ## Extension Commands
 

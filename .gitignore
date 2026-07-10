@@ -5,6 +5,7 @@ coverage/
 .turbo/
 .next/
 *.tsbuildinfo
+vscode-extension/out/
 
 # Local planning notes are intentionally kept out of the pushed repo.
 docs/archive/**

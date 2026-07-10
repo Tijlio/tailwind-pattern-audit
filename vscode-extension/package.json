@@ -1,0 +1,67 @@
+{
+  "name": "tailwind-pattern-audit-vscode",
+  "displayName": "Tailwind Pattern Audit",
+  "description": "View Tailwind Pattern Audit duplicate groups and diagnostics in VS Code.",
+  "version": "0.0.0",
+  "publisher": "tijlio",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:tailwindPatternAudit.run",
+    "onCommand:tailwindPatternAudit.refresh",
+    "workspaceContains:tailwind-pattern-audit.config.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "tailwindPatternAudit.run",
+        "title": "Tailwind Pattern Audit: Run"
+      },
+      {
+        "command": "tailwindPatternAudit.refresh",
+        "title": "Tailwind Pattern Audit: Refresh"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "tailwindPatternAudit.findings",
+          "name": "Tailwind Pattern Audit"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Tailwind Pattern Audit",
+      "properties": {
+        "tailwindPatternAudit.command": {
+          "type": "string",
+          "default": "npx",
+          "description": "Command used to run Tailwind Pattern Audit."
+        },
+        "tailwindPatternAudit.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "--yes",
+            "tailwind-pattern-audit@latest"
+          ],
+          "description": "Arguments passed before Tailwind Pattern Audit CLI options."
+        },
+        "tailwindPatternAudit.includeSimilar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include near-duplicate class set detection when running the audit."
+        }
+      }
+    }
+  }
+}

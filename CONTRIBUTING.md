@@ -10,6 +10,8 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
+pnpm smoke:reports
+pnpm vscode:compile
 ```
 
 Use small fixtures under `test/fixtures` when adding extraction behavior. Prefer focused tests
@@ -32,6 +34,8 @@ pnpm lint
 pnpm test
 pnpm format:check
 pnpm build
+pnpm smoke:reports
+pnpm vscode:compile
 pnpm pack --dry-run
 ```
 

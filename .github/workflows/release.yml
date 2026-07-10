@@ -44,6 +44,7 @@ jobs:
       - name: Verify
         run: |
           pnpm typecheck
+          pnpm vscode:compile
           pnpm lint
           pnpm test
           pnpm format:check

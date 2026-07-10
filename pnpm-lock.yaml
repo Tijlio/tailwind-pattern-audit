@@ -44,6 +44,9 @@ importers:
       "@types/picomatch":
         specifier: ^4.0.3
         version: 4.0.3
+      "@types/vscode":
+        specifier: ^1.125.0
+        version: 1.125.0
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -1001,6 +1004,12 @@ packages:
     resolution:
       {
         integrity: sha512-iG0T6+nYJ9FAPmx9SsUlnwcq1ZVRuCXcVEvWnntoPlrOpwtSTKNDC9uVAxTsC3PUvJ+99n4RpAcNgBbHX3JSnQ==,
+      }
+
+  "@types/vscode@1.125.0":
+    resolution:
+      {
+        integrity: sha512-0icm/ZQAaism87P0ekHqi4/Ju9du+Tm0RUW+y7vqRsxY2cY0FNRX1nAnaW7nT6npPt2tfHiheZ55Zm9UhqonFA==,
       }
 
   "@typescript-eslint/eslint-plugin@8.63.0":
@@ -2786,6 +2795,8 @@ snapshots:
       undici-types: 7.18.2
 
   "@types/picomatch@4.0.3": {}
+
+  "@types/vscode@1.125.0": {}
 
   "@typescript-eslint/eslint-plugin@8.63.0(@typescript-eslint/parser@8.63.0(eslint@9.39.4)(typescript@5.9.3))(eslint@9.39.4)(typescript@5.9.3)":
     dependencies:

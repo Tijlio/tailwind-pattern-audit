@@ -35,6 +35,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Compile VS Code extension
+        run: pnpm vscode:compile
+
       - name: Lint
         run: pnpm lint
 
