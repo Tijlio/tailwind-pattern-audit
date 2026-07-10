@@ -17,6 +17,7 @@
     "Linters",
     "Other"
   ],
+  "icon": "media/icon.png",
   "activationEvents": [
     "onCommand:tailwindPatternAudit.run",
     "onCommand:tailwindPatternAudit.refresh",
@@ -34,11 +35,20 @@
         "title": "Tailwind Pattern Audit: Refresh"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tailwindPatternAudit",
+          "title": "Tailwind Pattern Audit",
+          "icon": "media/activity-icon.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "tailwindPatternAudit": [
         {
           "id": "tailwindPatternAudit.findings",
-          "name": "Tailwind Pattern Audit"
+          "name": "Findings"
         }
       ]
     },
