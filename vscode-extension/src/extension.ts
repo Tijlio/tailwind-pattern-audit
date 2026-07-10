@@ -1,26 +1,62 @@
 import * as vscode from "vscode";
 
+import { AuditDecorations } from "./decorations";
 import { updateDiagnostics } from "./diagnostics";
-import { runAudit } from "./runner";
+import type { AuditReport, DuplicateClassGroup, SimilarClassGroup } from "./report";
+import { renderHtmlReport, runAudit } from "./runner";
 import { AuditTreeProvider } from "./tree";
+import { showGroupDetails, showHtmlReport, showSimilarDetails } from "./webview";
+
+interface ExtensionState {
+  report?: AuditReport;
+  workspaceFolder?: vscode.WorkspaceFolder;
+  ranAt?: Date;
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   const treeProvider = new AuditTreeProvider();
   const diagnostics = vscode.languages.createDiagnosticCollection("tailwind-pattern-audit");
+  const decorations = new AuditDecorations();
+  const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 90);
+  const state: ExtensionState = {};
+
+  statusBar.command = "tailwindPatternAudit.openReport";
+  statusBar.tooltip = "Open Tailwind Pattern Audit report";
 
   context.subscriptions.push(
     diagnostics,
+    decorations,
+    statusBar,
     vscode.window.registerTreeDataProvider("tailwindPatternAudit.findings", treeProvider),
     vscode.commands.registerCommand("tailwindPatternAudit.run", () =>
-      runAndRender(treeProvider, diagnostics),
+      runAndRender(treeProvider, diagnostics, decorations, statusBar, state),
     ),
     vscode.commands.registerCommand("tailwindPatternAudit.refresh", () =>
-      runAndRender(treeProvider, diagnostics),
+      runAndRender(treeProvider, diagnostics, decorations, statusBar, state),
+    ),
+    vscode.commands.registerCommand("tailwindPatternAudit.openReport", () =>
+      openReport(context, state),
+    ),
+    vscode.commands.registerCommand(
+      "tailwindPatternAudit.showGroupDetails",
+      (group: DuplicateClassGroup) => showGroupDetails(context, group),
+    ),
+    vscode.commands.registerCommand(
+      "tailwindPatternAudit.showSimilarDetails",
+      (group: SimilarClassGroup) => showSimilarDetails(context, group),
     ),
     vscode.commands.registerCommand(
       "tailwindPatternAudit.openLocation",
       (uri: vscode.Uri, line: number, column: number) => openLocation(uri, line, column),
     ),
+    vscode.languages.registerHoverProvider(
+      { scheme: "file" },
+      {
+        provideHover: (document, position) => decorations.provideHover(document, position),
+      },
+    ),
+    vscode.window.onDidChangeVisibleTextEditors(() => decorations.updateVisibleEditors()),
+    vscode.window.onDidChangeActiveTextEditor(() => decorations.updateVisibleEditors()),
   );
 }
 
@@ -31,6 +67,9 @@ export function deactivate(): void {
 async function runAndRender(
   treeProvider: AuditTreeProvider,
   diagnostics: vscode.DiagnosticCollection,
+  decorations: AuditDecorations,
+  statusBar: vscode.StatusBarItem,
+  state: ExtensionState,
 ): Promise<void> {
   const workspaceFolder = getWorkspaceFolder();
 
@@ -40,6 +79,7 @@ async function runAndRender(
   }
 
   try {
+    treeProvider.setLoading();
     const report = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Window,
@@ -47,17 +87,52 @@ async function runAndRender(
       },
       () => runAudit(workspaceFolder),
     );
+    const ranAt = new Date();
 
-    treeProvider.setReport(report, workspaceFolder);
+    state.report = report;
+    state.workspaceFolder = workspaceFolder;
+    state.ranAt = ranAt;
+
+    treeProvider.setReport(report, workspaceFolder, ranAt);
     updateDiagnostics(diagnostics, report, workspaceFolder);
+    decorations.setReport(report, workspaceFolder);
+    updateStatusBar(statusBar, report);
     vscode.window.showInformationMessage(
       `Tailwind Pattern Audit found ${report.groups.length} duplicate groups.`,
     );
   } catch (error) {
-    treeProvider.clear();
+    const message = error instanceof Error ? error.message : String(error);
+    state.report = undefined;
+    state.workspaceFolder = undefined;
+    state.ranAt = undefined;
+    treeProvider.setError(message);
     diagnostics.clear();
+    decorations.clear();
+    statusBar.hide();
+    vscode.window.showErrorMessage(message);
+  }
+}
+
+async function openReport(context: vscode.ExtensionContext, state: ExtensionState): Promise<void> {
+  if (!state.report) {
+    vscode.window.showWarningMessage("Run Tailwind Pattern Audit before opening the report.");
+    return;
+  }
+
+  try {
+    showHtmlReport(await renderHtmlReport(state.report), context);
+  } catch (error) {
     vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
   }
+}
+
+function updateStatusBar(statusBar: vscode.StatusBarItem, report: AuditReport): void {
+  const high = report.groups.filter((group) => group.recommendation.priority === "high").length;
+  const components = report.groups.filter(
+    (group) => group.recommendation.kind === "component",
+  ).length;
+  statusBar.text = `$(search) TW Audit: ${report.groups.length} groups · ${high} high · ${components} components`;
+  statusBar.show();
 }
 
 function getWorkspaceFolder(): vscode.WorkspaceFolder | undefined {

@@ -12,6 +12,7 @@ const ANALYZER_PACKAGE = "tailwind-pattern-audit";
 interface AnalyzerModule {
   analyzeProject(options: { cwd: string; similar: boolean }): Promise<unknown>;
   formatReport(report: unknown, format: "json"): string;
+  generateHtml(report: unknown): string;
 }
 
 export async function runAudit(workspaceFolder: vscode.WorkspaceFolder): Promise<AuditReport> {
@@ -66,7 +67,8 @@ async function importAnalyzer(): Promise<AnalyzerModule> {
 
   if (
     typeof imported.analyzeProject !== "function" ||
-    typeof imported.formatReport !== "function"
+    typeof imported.formatReport !== "function" ||
+    typeof imported.generateHtml !== "function"
   ) {
     throw new Error("Bundled tailwind-pattern-audit package did not expose the expected API.");
   }
@@ -74,7 +76,13 @@ async function importAnalyzer(): Promise<AnalyzerModule> {
   return {
     analyzeProject: imported.analyzeProject,
     formatReport: imported.formatReport,
+    generateHtml: imported.generateHtml,
   };
+}
+
+export async function renderHtmlReport(report: AuditReport): Promise<string> {
+  const analyzer = await importAnalyzer();
+  return analyzer.generateHtml(report);
 }
 
 function formatRunError(command: string, args: string[], error: unknown): string {

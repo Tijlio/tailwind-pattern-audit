@@ -33,6 +33,10 @@
       {
         "command": "tailwindPatternAudit.refresh",
         "title": "Tailwind Pattern Audit: Refresh"
+      },
+      {
+        "command": "tailwindPatternAudit.openReport",
+        "title": "Tailwind Pattern Audit: Open Report"
       }
     ],
     "viewsContainers": {
@@ -49,6 +53,20 @@
         {
           "id": "tailwindPatternAudit.findings",
           "name": "Findings"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "tailwindPatternAudit.refresh",
+          "when": "view == tailwindPatternAudit.findings",
+          "group": "navigation"
+        },
+        {
+          "command": "tailwindPatternAudit.openReport",
+          "when": "view == tailwindPatternAudit.findings",
+          "group": "navigation"
         }
       ]
     },
